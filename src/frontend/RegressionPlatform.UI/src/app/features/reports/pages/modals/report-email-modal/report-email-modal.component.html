@@ -15,7 +15,7 @@
 
     <!-- Recipients -->
     <div>
-      <label class="mb-1.5 block text-body-sm font-semibold text-on-surface">Recipients <span class="text-error">*</span></label>
+      <label for="report-email-recipients" class="mb-1.5 block text-body-sm font-semibold text-on-surface">Recipients <span class="text-error">*</span></label>
       <div class="flex flex-wrap items-center gap-1.5 rounded-lg border border-outline-variant px-2 py-1.5">
         @for (email of recipients(); track email) {
           <span class="inline-flex items-center gap-1 rounded-full bg-surface-container px-2 py-0.5 text-label-sm font-label-sm text-on-surface">
@@ -25,7 +25,7 @@
             </button>
           </span>
         }
-        <input
+        <input id="report-email-recipients"
           type="email"
           placeholder="Add more recipients…"
           class="min-w-[140px] flex-1 bg-transparent px-1 py-0.5 text-body-sm text-on-surface outline-none placeholder:text-secondary"
@@ -38,8 +38,8 @@
 
     <!-- Subject -->
     <div>
-      <label class="mb-1.5 block text-body-sm font-semibold text-on-surface">Subject <span class="text-error">*</span></label>
-      <input
+      <label for="report-email-subject" class="mb-1.5 block text-body-sm font-semibold text-on-surface">Subject <span class="text-error">*</span></label>
+      <input id="report-email-subject"
         type="text"
         [value]="subject()"
         class="w-full rounded-lg border border-outline-variant px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
@@ -48,8 +48,8 @@
 
     <!-- Message -->
     <div>
-      <label class="mb-1.5 block text-body-sm font-semibold text-on-surface">Message</label>
-      <textarea
+      <label for="report-email-message" class="mb-1.5 block text-body-sm font-semibold text-on-surface">Message</label>
+      <textarea id="report-email-message"
         rows="9"
         class="w-full resize-none rounded-lg border border-outline-variant px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
       >{{ message() }}</textarea>

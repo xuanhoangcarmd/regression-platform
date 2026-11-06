@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnInit, ViewChild, ViewEncapsulation, output, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, ViewEncapsulation, output, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { finalize } from 'rxjs';
@@ -788,12 +788,10 @@ export class PayloadGeneratorModalComponent implements OnInit {
   engineOptions: ComboOption[] = [];
   transmissionOptions: ComboOption[] = [];
 
-  constructor(
-    private payloadService: PayloadGeneratorService,
-    private vinEnumsService: VinEnumsService,
-    private oemSystemEnumsService: OemSystemEnumsService,
-    private ofmItemsService: OFMItemsService,
-  ) {}
+  private readonly payloadService = inject(PayloadGeneratorService);
+  private readonly vinEnumsService = inject(VinEnumsService);
+  private readonly oemSystemEnumsService = inject(OemSystemEnumsService);
+  private readonly ofmItemsService = inject(OFMItemsService);
 
   ngOnInit(): void {
     this.loadVinEnums();

@@ -133,7 +133,9 @@
             [class.border-l-primary]="store.activeRequestId() === request.requestId"
             [class.border-l-transparent]="store.activeRequestId() !== request.requestId"
             [class.bg-surface-container]="store.activeRequestId() === request.requestId"
+            tabindex="0"
             (click)="store.openRequest(request.requestId)"
+            (keydown.enter)="store.openRequest(request.requestId)"
           >
             <input
               type="checkbox"

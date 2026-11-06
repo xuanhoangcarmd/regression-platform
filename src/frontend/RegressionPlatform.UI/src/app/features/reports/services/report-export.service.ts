@@ -1011,6 +1011,7 @@ export class ReportExportService {
   /** "TestCase_0001_<title>" — a Windows-safe file-name stem, unique per row thanks to the index. */
   private testCaseFileName(index: number, title: string): string {
     const slug = title
+      // eslint-disable-next-line no-control-regex -- control chars are invalid in Windows file names
       .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
       .replace(/\s+/g, '_')
       .replace(/_+/g, '_')

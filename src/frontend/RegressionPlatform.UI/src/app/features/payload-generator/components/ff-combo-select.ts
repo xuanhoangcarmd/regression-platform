@@ -23,7 +23,7 @@ export interface FfOption {
  * host payload-generator page (ViewEncapsulation.None, .pg-root).
  */
 @Component({
-  selector: 'pg-ff-combo-select',
+  selector: 'app-pg-ff-combo-select',
   standalone: true,
   imports: [CommonModule, FormsModule],
   providers: [

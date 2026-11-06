@@ -174,7 +174,8 @@ export function removeAt(root: unknown, segments: JsonSegment[]): unknown {
   }
   if (isContainer(root) && !Array.isArray(root) && typeof head === 'string' && head in root) {
     if (!rest.length) {
-      const { [head]: _removed, ...others } = root;
+      const others = { ...root };
+      delete others[head];
       return others;
     }
     return { ...root, [head]: removeAt(root[head], rest) };

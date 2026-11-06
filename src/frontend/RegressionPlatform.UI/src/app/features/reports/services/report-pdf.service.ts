@@ -366,12 +366,12 @@ export class ReportPdfService {
         }
         const sweep = (slice.count / total) * Math.PI * 2;
         const steps = Math.max(2, Math.ceil((sweep / (Math.PI * 2)) * 64));
-        const points: Array<[number, number]> = [[cx, cy]];
+        const points: [number, number][] = [[cx, cy]];
         for (let i = 0; i <= steps; i++) {
           const a = start + sweep * (i / steps);
           points.push([cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR]);
         }
-        const deltas: Array<[number, number]> = [];
+        const deltas: [number, number][] = [];
         for (let i = 1; i < points.length; i++) {
           deltas.push([points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]]);
         }

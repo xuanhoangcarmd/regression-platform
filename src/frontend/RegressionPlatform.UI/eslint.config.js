@@ -39,6 +39,12 @@ module.exports = defineConfig([
       angular.configs.templateRecommended,
       angular.configs.templateAccessibility,
     ],
-    rules: {},
+    rules: {
+      // app-toggle renders a native <button>, so a wrapping <label> does activate it.
+      "@angular-eslint/template/label-has-associated-control": [
+        "error",
+        { controlComponents: ["app-toggle"] },
+      ],
+    },
   }
 ]);

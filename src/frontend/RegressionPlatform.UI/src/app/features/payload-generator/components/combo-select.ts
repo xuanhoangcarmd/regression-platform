@@ -22,7 +22,7 @@ export interface ComboOption {
  * `.input` class provided by the host payload-generator page (ViewEncapsulation.None, .pg-root).
  */
 @Component({
-  selector: 'pg-combo-select',
+  selector: 'app-pg-combo-select',
   standalone: true,
   imports: [CommonModule, FormsModule],
   providers: [
@@ -91,7 +91,7 @@ export class ComboSelectComponent implements ControlValueAccessor, OnChanges {
   @Input() fallbackName = '';
   @ViewChild('inputEl') inputEl!: ElementRef<HTMLInputElement>;
 
-  value: number = 0;
+  value = 0;
   searchText = '';
   isOpen = false;
   filtered: ComboOption[] = [];

@@ -60,11 +60,11 @@
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="field-group sm:col-span-2">
-              <label class="label">VIN</label>
+              <span class="label">VIN</span>
               <app-input [(ngModel)]="vin" placeholder="e.g. 1N4BL3AP5DC125177" />
             </div>
             <div class="field-group">
-              <label class="label" for="usb-pid">USB Product ID</label>
+              <span class="label" for="usb-pid">USB Product ID</span>
               <input id="usb-pid" type="number" [(ngModel)]="usbProductId" placeholder="e.g. 1688 (0x698)" min="0" max="65535" class="input font-code-sm" />
             </div>
           </div>
@@ -78,20 +78,20 @@
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div class="field-group">
-              <label class="label">OBD2 MIL (Check Engine)</label>
+              <span class="label">OBD2 MIL (Check Engine)</span>
               <div class="flex items-center gap-3 h-10">
                 <app-toggle [(ngModel)]="obd2Mil" ariaLabel="OBD2 MIL" />
                 <span class="text-body-sm font-medium" [class]="obd2Mil ? 'status-on' : 'status-off'">{{ obd2Mil ? 'ON' : 'OFF' }}</span>
               </div>
             </div>
             <div class="field-group">
-              <label class="label">Freeze Frame DTC</label>
+              <span class="label">Freeze Frame DTC</span>
               <app-input [(ngModel)]="ffDtc" placeholder="e.g. P0420" [error]="ffDtc && !isValidEcuCode(ffDtc) ? 'SAE: P/C/B/U + digit 0-3 + 3 hex (e.g. P0420)' : null" />
             </div>
-            <div class="field-group"><label class="label">LED Status</label><app-select [(ngModel)]="ledStatus" [options]="ledSelectOptions" [fullWidth]="true" /></div>
-            <div class="field-group"><label class="label">SIL (Service Light)</label><app-select [(ngModel)]="sil" [options]="silSelectOptions" [fullWidth]="true" /></div>
-            <div class="field-group"><label class="label">ABS Light</label><app-select [(ngModel)]="absLightStatus" [options]="lightSelectOptions" [fullWidth]="true" /></div>
-            <div class="field-group"><label class="label">TPMS Light</label><app-select [(ngModel)]="tpmsLightStatus" [options]="lightSelectOptions" [fullWidth]="true" /></div>
+            <div class="field-group"><span class="label">LED Status</span><app-select [(ngModel)]="ledStatus" [options]="ledSelectOptions" [fullWidth]="true" /></div>
+            <div class="field-group"><span class="label">SIL (Service Light)</span><app-select [(ngModel)]="sil" [options]="silSelectOptions" [fullWidth]="true" /></div>
+            <div class="field-group"><span class="label">ABS Light</span><app-select [(ngModel)]="absLightStatus" [options]="lightSelectOptions" [fullWidth]="true" /></div>
+            <div class="field-group"><span class="label">TPMS Light</span><app-select [(ngModel)]="tpmsLightStatus" [options]="lightSelectOptions" [fullWidth]="true" /></div>
           </div>
         </section>
 
@@ -137,18 +137,18 @@
                   <button (click)="removeOemDtc($index)" class="btn-icon-danger" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                  <div class="field-group"><label class="label">System</label><pg-combo-select [options]="oemSystemOptions" [(ngModel)]="dtc.System" placeholder="Search system..."></pg-combo-select></div>
-                  <div class="field-group"><label class="label">SubSystem</label><pg-combo-select [options]="oemSubSystemOptions" [(ngModel)]="dtc.SubSystem" placeholder="Search subsystem..."></pg-combo-select></div>
+                  <div class="field-group"><span class="label">System</span><app-pg-combo-select [options]="oemSystemOptions" [(ngModel)]="dtc.System" placeholder="Search system..."></app-pg-combo-select></div>
+                  <div class="field-group"><span class="label">SubSystem</span><app-pg-combo-select [options]="oemSubSystemOptions" [(ngModel)]="dtc.SubSystem" placeholder="Search subsystem..."></app-pg-combo-select></div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mt-3">
-                  <div class="field-group"><label class="label">Group</label><pg-combo-select [options]="groupOptions" [(ngModel)]="dtc.Group" placeholder="Search group..."></pg-combo-select></div>
+                  <div class="field-group"><span class="label">Group</span><app-pg-combo-select [options]="groupOptions" [(ngModel)]="dtc.Group" placeholder="Search group..."></app-pg-combo-select></div>
                   <div class="field-group">
-                    <label class="label">Code</label>
+                    <span class="label">Code</span>
                     <app-input [(ngModel)]="dtc.Code" placeholder="P0420, No code, Available, AB, 12-AB" [error]="dtc.Code && !isValidOemCode(dtc.Code) ? 'Invalid code. SAE (P0420) · hex (AB, 12345678) · hex/dec sub (12-AB, 25-121) · No code · Available' : null" />
                   </div>
                 </div>
                 <div class="field-group mt-3">
-                  <label class="label">Types <span class="text-secondary font-normal">(common first · determines RepairStatus)</span></label>
+                  <span class="label">Types <span class="text-secondary font-normal">(common first · determines RepairStatus)</span></span>
                   <div class="flex flex-wrap items-center gap-1.5">
                     @for (t of bufferNameOptions; track t; let i = $index) {
                       @if (i === commonTypeCount && commonTypeCount > 0) {
@@ -178,34 +178,34 @@
             <div class="mt-4 space-y-4">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div class="field-group">
-                  <label class="label">Battery Condition Status</label>
+                  <span class="label">Battery Condition Status</span>
                   <app-select [(ngModel)]="batteryConditionStatus" [options]="batterySelectOptions" [fullWidth]="true" />
                 </div>
                 <div class="field-group">
-                  <label class="label">Odometer</label>
+                  <span class="label">Odometer</span>
                   <div class="flex gap-2">
                     <input type="number" [(ngModel)]="odometerValue" placeholder="42892" class="input flex-1" min="0" />
                     <div class="w-24 shrink-0"><app-select [(ngModel)]="odometerUnit" [options]="odoUnitSelectOptions" [fullWidth]="true" /></div>
                   </div>
                 </div>
                 <div class="field-group">
-                  <label class="label">Battery Voltage (V)</label>
+                  <span class="label">Battery Voltage (V)</span>
                   <input type="number" [(ngModel)]="batteryVoltageValue" placeholder="11.65" step="0.01" min="0" class="input font-code-sm" />
                 </div>
               </div>
               <div class="field-group">
-                <label class="label">Record Time <span class="text-label-xs text-secondary font-normal">(ms per segment)</span></label>
+                <span class="label">Record Time <span class="text-label-xs text-secondary font-normal">(ms per segment)</span></span>
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mt-1">
-                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">OBD2</label><input type="number" [(ngModel)]="recordTime.OBD2" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
-                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">ABS</label><input type="number" [(ngModel)]="recordTime.ABS" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
-                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">TCM</label><input type="number" [(ngModel)]="recordTime.TCM" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
-                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">ODO</label><input type="number" [(ngModel)]="recordTime.ODO" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
-                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">ECM_PCM</label><input type="number" [(ngModel)]="recordTime.ECM_PCM" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
-                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">SIL</label><input type="number" [(ngModel)]="recordTime.SIL" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
-                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">ABS_LIGHT</label><input type="number" [(ngModel)]="recordTime.ABS_LIGHT" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
-                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">OFM_ITEMS</label><input type="number" [(ngModel)]="recordTime.OFM_ITEMS" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
-                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">TPMS</label><input type="number" [(ngModel)]="recordTime.TPMS" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
-                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">TPMS_LIGHT</label><input type="number" [(ngModel)]="recordTime.TPMS_LIGHT" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><span class="text-label-xs text-secondary font-code-sm block mb-0.5">OBD2</span><input type="number" [(ngModel)]="recordTime.OBD2" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><span class="text-label-xs text-secondary font-code-sm block mb-0.5">ABS</span><input type="number" [(ngModel)]="recordTime.ABS" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><span class="text-label-xs text-secondary font-code-sm block mb-0.5">TCM</span><input type="number" [(ngModel)]="recordTime.TCM" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><span class="text-label-xs text-secondary font-code-sm block mb-0.5">ODO</span><input type="number" [(ngModel)]="recordTime.ODO" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><span class="text-label-xs text-secondary font-code-sm block mb-0.5">ECM_PCM</span><input type="number" [(ngModel)]="recordTime.ECM_PCM" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><span class="text-label-xs text-secondary font-code-sm block mb-0.5">SIL</span><input type="number" [(ngModel)]="recordTime.SIL" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><span class="text-label-xs text-secondary font-code-sm block mb-0.5">ABS_LIGHT</span><input type="number" [(ngModel)]="recordTime.ABS_LIGHT" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><span class="text-label-xs text-secondary font-code-sm block mb-0.5">OFM_ITEMS</span><input type="number" [(ngModel)]="recordTime.OFM_ITEMS" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><span class="text-label-xs text-secondary font-code-sm block mb-0.5">TPMS</span><input type="number" [(ngModel)]="recordTime.TPMS" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><span class="text-label-xs text-secondary font-code-sm block mb-0.5">TPMS_LIGHT</span><input type="number" [(ngModel)]="recordTime.TPMS_LIGHT" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
                 </div>
               </div>
             </div>
@@ -221,14 +221,14 @@
           </button>
           @if (showVinProfile) {
             <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              <div class="field-group"><label class="label">Manufacturer</label><pg-combo-select [options]="mfrOptions" [(ngModel)]="vinProfile.Manufacturer" placeholder="Search manufacturer..."></pg-combo-select></div>
-              <div class="field-group"><label class="label">Year</label><pg-combo-select [options]="yearOptions" [(ngModel)]="vinProfile.Year" placeholder="Search year..."></pg-combo-select></div>
-              <div class="field-group"><label class="label">Make</label><pg-combo-select [options]="makeOptions" [(ngModel)]="vinProfile.Make" placeholder="Search make..."></pg-combo-select></div>
-              <div class="field-group"><label class="label">Model</label><pg-combo-select [options]="modelOptions" [(ngModel)]="vinProfile.Model" placeholder="Search model..."></pg-combo-select></div>
-              <div class="field-group"><label class="label">Engine</label><pg-combo-select [options]="engineOptions" [(ngModel)]="vinProfile.Engine" placeholder="Search engine..."></pg-combo-select></div>
-              <div class="field-group"><label class="label">Trim</label><pg-combo-select [options]="trimOptions" [(ngModel)]="vinProfile.Trim" placeholder="Search trim..."></pg-combo-select></div>
-              <div class="field-group"><label class="label">Transmission</label><pg-combo-select [options]="transmissionOptions" [(ngModel)]="vinProfile.Transmission" placeholder="Search transmission..."></pg-combo-select></div>
-              <div class="field-group"><label class="label">_Make_Enum</label><pg-combo-select [options]="oemMakeOptions" [ngModel]="oemMakeEnum" (ngModelChange)="onOemMakeChange($event)" placeholder="Search make..."></pg-combo-select></div>
+              <div class="field-group"><span class="label">Manufacturer</span><app-pg-combo-select [options]="mfrOptions" [(ngModel)]="vinProfile.Manufacturer" placeholder="Search manufacturer..."></app-pg-combo-select></div>
+              <div class="field-group"><span class="label">Year</span><app-pg-combo-select [options]="yearOptions" [(ngModel)]="vinProfile.Year" placeholder="Search year..."></app-pg-combo-select></div>
+              <div class="field-group"><span class="label">Make</span><app-pg-combo-select [options]="makeOptions" [(ngModel)]="vinProfile.Make" placeholder="Search make..."></app-pg-combo-select></div>
+              <div class="field-group"><span class="label">Model</span><app-pg-combo-select [options]="modelOptions" [(ngModel)]="vinProfile.Model" placeholder="Search model..."></app-pg-combo-select></div>
+              <div class="field-group"><span class="label">Engine</span><app-pg-combo-select [options]="engineOptions" [(ngModel)]="vinProfile.Engine" placeholder="Search engine..."></app-pg-combo-select></div>
+              <div class="field-group"><span class="label">Trim</span><app-pg-combo-select [options]="trimOptions" [(ngModel)]="vinProfile.Trim" placeholder="Search trim..."></app-pg-combo-select></div>
+              <div class="field-group"><span class="label">Transmission</span><app-pg-combo-select [options]="transmissionOptions" [(ngModel)]="vinProfile.Transmission" placeholder="Search transmission..."></app-pg-combo-select></div>
+              <div class="field-group"><span class="label">_Make_Enum</span><app-pg-combo-select [options]="oemMakeOptions" [ngModel]="oemMakeEnum" (ngModelChange)="onOemMakeChange($event)" placeholder="Search make..."></app-pg-combo-select></div>
             </div>
           }
         </section>
@@ -306,7 +306,7 @@
                     <div class="rounded-lg border border-outline-variant bg-surface-container p-3 group">
                       <div class="flex items-center gap-3 mb-2">
                         <div class="flex-1 grid grid-cols-2 gap-2">
-                          <pg-ff-combo-select [options]="freezeFrameOptions" [(ngModel)]="$any(ff)._label" (ngModelChange)="onFreezeFrameLabelInput(ff)" placeholder="Search PID name…"></pg-ff-combo-select>
+                          <app-pg-ff-combo-select [options]="freezeFrameOptions" [(ngModel)]="$any(ff)._label" (ngModelChange)="onFreezeFrameLabelInput(ff)" placeholder="Search PID name…"></app-pg-ff-combo-select>
                           <input type="text" [ngModel]="ff.Unit" disabled placeholder="Unit" class="input opacity-60" />
                         </div>
                         <button (click)="removeEcuFreezeFrameItem($index)" class="btn-icon-danger" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
@@ -340,7 +340,7 @@
                     <div class="rounded-lg border border-outline-variant bg-surface-container p-3 group">
                       <div class="flex items-center gap-3 mb-2">
                         <div class="flex-1 grid grid-cols-2 gap-2">
-                          <pg-ff-combo-select [options]="freezeFrameOptions" [(ngModel)]="$any(ff)._label" (ngModelChange)="onFreezeFrameLabelInput(ff)" placeholder="Search PID name…"></pg-ff-combo-select>
+                          <app-pg-ff-combo-select [options]="freezeFrameOptions" [(ngModel)]="$any(ff)._label" (ngModelChange)="onFreezeFrameLabelInput(ff)" placeholder="Search PID name…"></app-pg-ff-combo-select>
                           <input type="text" [ngModel]="ff.Unit" disabled placeholder="Unit" class="input opacity-60" />
                         </div>
                         <button (click)="removeTcuFreezeFrameItem($index)" class="btn-icon-danger" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
@@ -417,15 +417,15 @@
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-2">
                       <div class="field-group sm:col-span-2">
-                        <label class="label">Item Name</label>
-                        <pg-combo-select [options]="ofmItemOptions" [ngModel]="item.ItemId" (ngModelChange)="onOfmItemSelect(item, $event)" [fallbackName]="item.ItemName" placeholder="Search item..."></pg-combo-select>
+                        <span class="label">Item Name</span>
+                        <app-pg-combo-select [options]="ofmItemOptions" [ngModel]="item.ItemId" (ngModelChange)="onOfmItemSelect(item, $event)" [fallbackName]="item.ItemName" placeholder="Search item..."></app-pg-combo-select>
                       </div>
-                      <div class="field-group"><label class="label">Item ID</label><input type="number" [ngModel]="item.ItemId" disabled class="input font-code-sm opacity-60" /></div>
-                      <div class="field-group"><label class="label">Desc Enum</label><input type="number" [ngModel]="item.ItemDescriptionEnum" disabled class="input font-code-sm opacity-60" /></div>
+                      <div class="field-group"><span class="label">Item ID</span><input type="number" [ngModel]="item.ItemId" disabled class="input font-code-sm opacity-60" /></div>
+                      <div class="field-group"><span class="label">Desc Enum</span><input type="number" [ngModel]="item.ItemDescriptionEnum" disabled class="input font-code-sm opacity-60" /></div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
-                      <div class="field-group"><label class="label">Value</label><app-input [(ngModel)]="item.Value" placeholder="33.93" /></div>
-                      <div class="field-group"><label class="label">Unit</label><input type="text" [ngModel]="item.Unit" disabled placeholder="Unit" class="input font-code-sm opacity-60" /></div>
+                      <div class="field-group"><span class="label">Value</span><app-input [(ngModel)]="item.Value" placeholder="33.93" /></div>
+                      <div class="field-group"><span class="label">Unit</span><input type="text" [ngModel]="item.Unit" disabled placeholder="Unit" class="input font-code-sm opacity-60" /></div>
                     </div>
                   </div>
                 }
@@ -470,11 +470,11 @@
             <h3 class="section-title">Combine OEM Module Raw</h3>
           </div>
           <div class="field-group mb-4">
-            <label class="label">VinProfileRaw (base64)</label>
+            <span class="label">VinProfileRaw (base64)</span>
             <app-input [(ngModel)]="combineVinProfileRawInput" placeholder="Paste VinProfileRaw base64 (from Vehicle Buffers output)" />
           </div>
           <div class="field-group mb-4">
-            <label class="label">OemModuleRaw (base64 blocks, JSON array)</label>
+            <span class="label">OemModuleRaw (base64 blocks, JSON array)</span>
             <app-textarea [(ngModel)]="combineOemRawInput" [rows]="8" placeholder='Paste OemModuleRaw JSON array, e.g. ["base64...", "base64..."]' />
           </div>
           <div class="flex justify-end pt-1 mb-4">
@@ -483,7 +483,7 @@
           @if (combineResult()) {
             <div class="field-group">
               <div class="flex items-center justify-between mb-2">
-                <label class="label !mb-0">OemModuleRawPayload</label>
+                <span class="label !mb-0">OemModuleRawPayload</span>
                 <button (click)="copyCombineResult()" class="btn-icon" title="Copy to clipboard">
                   <mat-icon class="text-[16px]" [class.text-green-600]="combineCopied()">{{ combineCopied() ? 'check' : 'content_copy' }}</mat-icon>
                 </button>
@@ -523,7 +523,7 @@
         </div>
         <div class="px-5 py-4">
           <div class="field-group mb-3">
-            <label class="label">Base64 Payload</label>
+            <span class="label">Base64 Payload</span>
             <app-textarea [(ngModel)]="importPayloadText" [rows]="6" placeholder="Paste the base64 raw payload here..." [error]="importError() || null" />
           </div>
         </div>
