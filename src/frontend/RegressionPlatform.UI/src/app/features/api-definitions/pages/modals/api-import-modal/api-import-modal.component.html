@@ -1,0 +1,37 @@
+<app-modal
+  type="update"
+  size="md"
+  title="Import from Swagger"
+  confirmLabel="Import"
+  [confirmDisabled]="urlControl.invalid || result() !== null"
+  [confirmLoading]="loading()"
+  (confirm)="submit()"
+  (cancelled)="closed.emit()"
+>
+  <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Swagger URL</span>
+      <app-input
+        [formControl]="urlControl"
+        placeholder="https://.../swagger/v1/swagger.json"
+        [error]="controlErrorMessage(urlControl, 'Swagger URL')"
+      />
+      <p class="text-body-sm text-secondary">
+        Enter the server's OpenAPI/Swagger JSON link. The system imports new APIs and skips ones that already exist (by
+        method + endpoint).
+      </p>
+    </div>
+
+    @if (loading()) {
+      <p class="text-body-sm text-secondary">Importing…</p>
+    }
+    @if (result(); as r) {
+      <p class="text-body-sm font-medium text-green-700">
+        Imported {{ r.imported }} APIs, skipped {{ r.skipped }} (total {{ r.total }}).
+      </p>
+    }
+    @if (errorMessage()) {
+      <p class="text-body-sm text-error">{{ errorMessage() }}</p>
+    }
+  </div>
+</app-modal>

@@ -1,0 +1,23 @@
+@if (loading()) {
+  <div class="flex flex-1 items-center justify-center py-10 text-body-sm text-secondary">Loading response times…</div>
+} @else if (errorMessage()) {
+  <div class="flex flex-1 items-center justify-center py-10 text-body-sm text-error">{{ errorMessage() }}</div>
+} @else if (hasData()) {
+  <apx-chart
+    [series]="chart().series"
+    [chart]="chart().chart"
+    [xaxis]="chart().xaxis"
+    [yaxis]="chart().yaxis"
+    [stroke]="chart().stroke"
+    [markers]="chart().markers"
+    [dataLabels]="chart().dataLabels"
+    [legend]="chart().legend"
+    [grid]="chart().grid"
+    [tooltip]="chart().tooltip"
+    [colors]="chart().colors"
+  />
+} @else {
+  <div class="flex flex-1 items-center justify-center py-10 text-center text-body-sm text-secondary">
+    No response-time data for these runs.
+  </div>
+}

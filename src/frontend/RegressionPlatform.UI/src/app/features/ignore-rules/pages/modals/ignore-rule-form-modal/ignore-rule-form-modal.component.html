@@ -1,0 +1,120 @@
+<app-modal
+  type="update"
+  size="md"
+  [title]="isEdit ? 'Edit Rule' : 'Add Rule'"
+  [confirmLabel]="isEdit ? 'Save Changes' : 'Add Rule'"
+  [confirmDisabled]="form.invalid"
+  [confirmLoading]="loading()"
+  (confirm)="save()"
+  (cancelled)="closed.emit()"
+>
+  <form [formGroup]="form" class="flex flex-col gap-4">
+    <!-- Rule type -->
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Rule Type</span>
+      <app-select formControlName="ruleType" [options]="ruleTypeOptions" [fullWidth]="true" />
+      <p class="text-body-sm text-secondary">
+        @if (ruleType() === 'TrimAfter') {
+          <span class="font-medium text-on-surface">Cut value at character:</span> compare the string at the path
+          only up to the first occurrence of the character(s) below — e.g. <span class="text-code-sm font-code-sm">?</span>
+          turns <span class="text-code-sm font-code-sm">…/express-2.jpg?Expires=…&amp;Signature=…</span> into
+          <span class="text-code-sm font-code-sm">…/express-2.jpg</span>. Values without it are compared as-is.
+        } @else if (ruleType() === 'ExtractRoot') {
+          <span class="font-medium text-on-surface">Extract root:</span> lift the subtree at the path to the
+          response root before comparing — e.g. set <span class="text-code-sm font-code-sm">$.data</span> so an
+          envelope-wrapped response compares against an un-wrapped one. Applied only to sides that actually have the path.
+        } @else {
+          <span class="font-medium text-on-surface">Ignore field:</span> drop the field at the path before
+          comparing (excluded from the hash and the diff).
+        }
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Json Path <span class="text-error">*</span></span>
+      <app-input
+        formControlName="jsonPath"
+        [placeholder]="ruleType() === 'ExtractRoot' ? 'e.g. $.data' : ruleType() === 'TrimAfter' ? 'e.g. $.Data[*].ImageFileUrl' : 'e.g. $.traceId or $.items[*].updatedAt'"
+        [error]="controlErrorMessage(form.controls.jsonPath, 'Json Path')"
+      />
+      <p class="text-body-sm text-secondary">
+        Format <span class="text-code-sm font-code-sm">$.property.subproperty</span>,
+        <span class="text-code-sm font-code-sm">$.array[0].property</span>, or
+        <span class="text-code-sm font-code-sm">$.array[*].property</span>
+        (<span class="text-code-sm font-code-sm">[*]</span> = the field in every array element).
+      </p>
+    </div>
+
+    @if (ruleType() === 'TrimAfter') {
+      <div class="flex flex-col gap-1.5">
+        <span class="text-body-sm font-medium text-on-surface">Cut at <span class="text-error">*</span></span>
+        <app-input
+          formControlName="delimiter"
+          placeholder="e.g. ?  or  &amp;  or  #"
+          [error]="controlErrorMessage(form.controls.delimiter, 'Cut at')"
+        />
+        <p class="text-body-sm text-secondary">
+          Only the text before the first occurrence is compared (the character itself is dropped). Case-sensitive.
+        </p>
+      </div>
+    }
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Description</span>
+      <app-textarea
+        formControlName="description"
+        [rows]="2"
+        placeholder="e.g. System Trace ID"
+        [error]="controlErrorMessage(form.controls.description, 'Description')"
+      />
+    </div>
+
+    <!-- Applies To (multi-select) -->
+    <div class="flex flex-col gap-1.5">
+      <div class="flex items-center justify-between">
+        <span class="text-body-sm font-medium text-on-surface">Applies To</span>
+        @if (selectedApiIds().size > 0) {
+          <button type="button" (click)="clearApis()" class="text-body-sm font-medium text-primary hover:underline">
+            All APIs
+          </button>
+        }
+      </div>
+
+      <div class="max-h-48 overflow-y-auto rounded-lg border border-outline-variant">
+        @if (apiOptions().length === 0) {
+          <p class="px-4 py-3 text-body-sm text-secondary">No APIs yet.</p>
+        } @else {
+          @for (option of apiOptions(); track option.value) {
+            <label
+              class="flex cursor-pointer items-center gap-3 border-b border-outline-variant px-4 py-2 last:border-b-0 hover:bg-surface-container-low"
+            >
+              <input
+                type="checkbox"
+                class="h-4 w-4 accent-primary-container"
+                [checked]="isApiSelected(apiId(option))"
+                (change)="toggleApi(apiId(option))"
+              />
+              <span class="text-body-sm text-on-surface">{{ option.label }}</span>
+            </label>
+          }
+        }
+      </div>
+
+      <p class="text-body-sm text-secondary">
+        @if (selectedApiIds().size === 0) {
+          No APIs selected → applies to <span class="font-medium text-on-surface">All APIs</span>.
+        } @else {
+          Applies to {{ selectedApiIds().size }} selected API(s).
+        }
+      </p>
+    </div>
+
+    <div class="flex items-center justify-between rounded-lg border border-outline-variant px-4 py-3">
+      <div>
+        <span class="block text-body-sm font-medium text-on-surface">Active</span>
+        <span class="text-body-sm text-secondary">The rule is applied during comparison.</span>
+      </div>
+      <app-toggle formControlName="enabled" ariaLabel="Active status" />
+    </div>
+  </form>
+</app-modal>

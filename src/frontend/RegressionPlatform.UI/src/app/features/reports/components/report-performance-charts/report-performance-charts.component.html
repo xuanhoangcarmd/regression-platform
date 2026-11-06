@@ -1,0 +1,73 @@
+@if (loading()) {
+  <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-10 text-center text-body-sm text-secondary shadow-sm">
+    Loading response-time data…
+  </div>
+} @else if (errorMessage()) {
+  <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-10 text-center text-body-sm text-error shadow-sm">
+    {{ errorMessage() }}
+  </div>
+} @else {
+  <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <!-- Response time per request -->
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 class="font-title-sm text-title-sm text-on-surface">Response Time by Request</h2>
+          <p class="text-body-sm text-secondary">Duration per request — {{ runATitle() }} vs {{ runBTitle() }}.</p>
+        </div>
+        @if (requestApis().length > 1) {
+          <select
+            [value]="selectedApiId() ?? ''"
+            (change)="onApiFilterChange($any($event.target).value)"
+            class="shrink-0 rounded-lg border border-outline-variant bg-surface-container-lowest px-2.5 py-1.5 text-body-sm text-on-surface outline-none focus:border-primary"
+          >
+            <option value="">All APIs</option>
+            @for (api of requestApis(); track api.id) {
+              <option [value]="api.id">{{ api.name }}</option>
+            }
+          </select>
+        }
+      </div>
+      @if (hasRequestData()) {
+        <apx-chart
+          [series]="requestChart().series"
+          [chart]="requestChart().chart"
+          [xaxis]="requestChart().xaxis"
+          [yaxis]="requestChart().yaxis"
+          [stroke]="requestChart().stroke"
+          [markers]="requestChart().markers"
+          [dataLabels]="requestChart().dataLabels"
+          [legend]="requestChart().legend"
+          [grid]="requestChart().grid"
+          [tooltip]="requestChart().tooltip"
+          [colors]="requestChart().colors"
+        />
+      } @else {
+        <p class="py-10 text-center text-body-sm text-secondary">No response data for these runs.</p>
+      }
+    </div>
+
+    <!-- Avg response time per API -->
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
+      <h2 class="font-title-sm text-title-sm text-on-surface">Avg Response Time by API</h2>
+      <p class="text-body-sm text-secondary">Average duration per API — {{ runATitle() }} vs {{ runBTitle() }}.</p>
+      @if (hasApiData()) {
+        <apx-chart
+          [series]="apiChart().series"
+          [chart]="apiChart().chart"
+          [xaxis]="apiChart().xaxis"
+          [yaxis]="apiChart().yaxis"
+          [stroke]="apiChart().stroke"
+          [dataLabels]="apiChart().dataLabels"
+          [legend]="apiChart().legend"
+          [grid]="apiChart().grid"
+          [tooltip]="apiChart().tooltip"
+          [colors]="apiChart().colors"
+          [plotOptions]="apiChart().plotOptions"
+        />
+      } @else {
+        <p class="py-10 text-center text-body-sm text-secondary">No per-API data for these runs.</p>
+      }
+    </div>
+  </div>
+}

@@ -1,0 +1,14 @@
+<app-modal
+  type="remove"
+  size="sm"
+  title="Delete Request"
+  confirmLabel="Delete"
+  [confirmLoading]="loading()"
+  (confirm)="confirmed.emit()"
+  (cancelled)="closed.emit()"
+>
+  <p class="text-body-sm leading-relaxed text-on-surface">
+    Delete request "{{ request().title }}" ({{ displayRequestId(request().id) }})? The record will be archived
+    (deactivated) and its history will be retained.
+  </p>
+</app-modal>

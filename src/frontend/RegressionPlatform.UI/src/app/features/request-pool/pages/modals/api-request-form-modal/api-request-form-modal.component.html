@@ -1,0 +1,56 @@
+<app-modal
+  type="update"
+  size="lg"
+  [title]="isEdit ? 'Edit Request' : 'Add Request'"
+  [confirmLabel]="isEdit ? 'Save Changes' : 'Add Request'"
+  [confirmDisabled]="form.invalid"
+  [confirmLoading]="loading()"
+  (confirm)="save()"
+  (cancelled)="closed.emit()"
+>
+  <form [formGroup]="form" class="flex flex-col gap-4">
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">API <span class="text-error">*</span></span>
+      <app-select
+        formControlName="apiId"
+        [options]="apiOptions()"
+        placeholder="-- Select API --"
+        [error]="controlErrorMessage(form.controls.apiId, 'API')"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Request Title <span class="text-error">*</span></span>
+      <app-input
+        formControlName="title"
+        placeholder="e.g. Honda Civic 2018 1.8L"
+        [error]="controlErrorMessage(form.controls.title, 'Title')"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Description</span>
+      <app-textarea
+        formControlName="description"
+        [rows]="2"
+        placeholder="Optional note about this request"
+        [error]="controlErrorMessage(form.controls.description, 'Description')"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Headers (JSON)</span>
+      <app-textarea formControlName="headersJson" [rows]="3" placeholder="Headers as JSON" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Query String (JSON)</span>
+      <app-textarea formControlName="queryStringJson" [rows]="3" placeholder="Query string as JSON" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Request Body</span>
+      <app-textarea formControlName="requestBody" [rows]="5" placeholder="Request body content" />
+    </div>
+  </form>
+</app-modal>

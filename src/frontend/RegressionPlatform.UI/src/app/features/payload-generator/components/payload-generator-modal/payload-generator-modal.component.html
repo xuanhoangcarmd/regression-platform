@@ -1,0 +1,537 @@
+<div class="pg-root fixed inset-0 z-50 flex items-center justify-center p-4">
+  <!-- Backdrop -->
+  <button type="button" aria-label="Close" class="fixed inset-0 bg-slate-900/40" (click)="close()"></button>
+
+  <!-- Panel -->
+  <div
+    role="dialog"
+    aria-modal="true"
+    aria-label="Payload Generator"
+    class="relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl bg-surface-container-lowest shadow-xl"
+  >
+    <!-- Header -->
+    <div class="flex items-center justify-between gap-3 border-b border-outline-variant px-5 py-4">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-[22px] text-primary">bolt</mat-icon>
+        <h2 class="font-headline-md text-headline-md text-on-surface">Payload Generator</h2>
+        @if (importedBasePayload()) {
+          <span class="ml-1 inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-label-xs font-label-xs text-amber-700">
+            Import mode
+            <button type="button" (click)="clearImportMode()" title="Clear import mode" class="hover:text-amber-900">
+              <mat-icon class="text-[13px] leading-none">close</mat-icon>
+            </button>
+          </span>
+        }
+      </div>
+      <div class="flex items-center gap-2">
+        <app-button variant="secondary" size="sm" icon="upload_file" (click)="openImportModal()">Import</app-button>
+        <button type="button" (click)="close()" aria-label="Close" class="text-secondary transition-colors hover:text-on-surface">
+          <mat-icon class="text-[20px]">close</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Body (scrollable) -->
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <!-- ─── Tabs ─── -->
+      <div class="flex gap-1 rounded-lg border border-outline-variant bg-surface-container-low p-1">
+        <button (click)="activeTab = 'buffers'" [class]="activeTab === 'buffers' ? 'tab-btn tab-active' : 'tab-btn tab-inactive'">
+          Raw Payload · Raw Buffers
+        </button>
+        <button (click)="activeTab = 'combine'" [class]="activeTab === 'combine' ? 'tab-btn tab-active' : 'tab-btn tab-inactive'">
+          OEM Combine
+        </button>
+      </div>
+
+      <!-- Initial option lists still loading (VIN / OEM system / freeze-frame / OFM enums) -->
+      @if (optionsLoading()) {
+        <div class="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 text-body-sm text-secondary">
+          <mat-icon class="animate-spin text-[16px] text-primary">progress_activity</mat-icon>
+          Loading vehicle options…
+        </div>
+      }
+
+      @if (activeTab === 'buffers') {
+        <!-- ═══ PRIMARY: Vehicle (VIN) ═══ -->
+        <section class="card">
+          <div class="flex items-center gap-2 mb-4">
+            <mat-icon class="text-[16px] text-secondary">directions_car</mat-icon>
+            <h3 class="section-title">Vehicle</h3>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="field-group sm:col-span-2">
+              <label class="label">VIN</label>
+              <app-input [(ngModel)]="vin" placeholder="e.g. 1N4BL3AP5DC125177" />
+            </div>
+            <div class="field-group">
+              <label class="label" for="usb-pid">USB Product ID</label>
+              <input id="usb-pid" type="number" [(ngModel)]="usbProductId" placeholder="e.g. 1688 (0x698)" min="0" max="65535" class="input font-code-sm" />
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ PRIMARY: Payload Settings ═══ -->
+        <section class="card">
+          <div class="flex items-center gap-2 mb-4">
+            <mat-icon class="text-[16px] text-secondary">tune</mat-icon>
+            <h3 class="section-title">Payload Settings</h3>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="field-group">
+              <label class="label">OBD2 MIL (Check Engine)</label>
+              <div class="flex items-center gap-3 h-10">
+                <app-toggle [(ngModel)]="obd2Mil" ariaLabel="OBD2 MIL" />
+                <span class="text-body-sm font-medium" [class]="obd2Mil ? 'status-on' : 'status-off'">{{ obd2Mil ? 'ON' : 'OFF' }}</span>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="label">Freeze Frame DTC</label>
+              <app-input [(ngModel)]="ffDtc" placeholder="e.g. P0420" [error]="ffDtc && !isValidEcuCode(ffDtc) ? 'SAE: P/C/B/U + digit 0-3 + 3 hex (e.g. P0420)' : null" />
+            </div>
+            <div class="field-group"><label class="label">LED Status</label><app-select [(ngModel)]="ledStatus" [options]="ledSelectOptions" [fullWidth]="true" /></div>
+            <div class="field-group"><label class="label">SIL (Service Light)</label><app-select [(ngModel)]="sil" [options]="silSelectOptions" [fullWidth]="true" /></div>
+            <div class="field-group"><label class="label">ABS Light</label><app-select [(ngModel)]="absLightStatus" [options]="lightSelectOptions" [fullWidth]="true" /></div>
+            <div class="field-group"><label class="label">TPMS Light</label><app-select [(ngModel)]="tpmsLightStatus" [options]="lightSelectOptions" [fullWidth]="true" /></div>
+          </div>
+        </section>
+
+        <!-- ═══ PRIMARY: OBDII DTCs (ECU) ═══ -->
+        <section class="card">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-[16px] text-secondary">warning</mat-icon>
+              <h3 class="section-title">OBDII DTCs</h3>
+              <span class="text-label-xs font-code-sm text-secondary">ECU → DtcsEcmRaw</span>
+              @if (bufEcuDtcs.length > 0) { <span class="count-badge">{{ bufEcuDtcs.length }}</span> }
+            </div>
+            <button (click)="addBufEcuDtc()" class="btn-icon" title="Add OBDII DTC"><mat-icon class="text-[18px]">add</mat-icon></button>
+          </div>
+          <div class="space-y-2">
+            @for (dtc of bufEcuDtcs; track $index) {
+              <div class="flex items-start gap-3 group">
+                <div class="flex-1"><app-input [(ngModel)]="dtc.code" placeholder="P0420" [error]="dtc.code && !isValidEcuCode(dtc.code) ? 'SAE: P/C/B/U + digit 0-3 + 3 hex (e.g. P0420, C1101)' : null" /></div>
+                <div class="w-40 shrink-0"><app-select [(ngModel)]="dtc.type" [options]="dtcTypeSelectOptions" [fullWidth]="true" /></div>
+                <button (click)="removeBufEcuDtc($index)" class="btn-icon-danger mt-1" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
+              </div>
+            }
+          </div>
+          @if (bufEcuDtcs.length === 0) { <p class="empty-state">No OBDII DTCs added</p> }
+        </section>
+
+        <!-- ═══ PRIMARY: OEM DTCs ═══ -->
+        <section class="card">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-[16px] text-secondary">warning</mat-icon>
+              <h3 class="section-title">OEM DTCs</h3>
+              <span class="text-label-xs font-code-sm text-secondary">(uses _Make_Enum from Vehicle Profile)</span>
+              @if (oemDtcs.length > 0) { <span class="count-badge">{{ oemDtcs.length }}</span> }
+            </div>
+            <button (click)="addOemDtc()" class="btn-icon" title="Add OEM DTC"><mat-icon class="text-[18px]">add</mat-icon></button>
+          </div>
+          <div class="space-y-3">
+            @for (dtc of oemDtcs; track $index) {
+              <div class="rounded-lg border border-outline-variant bg-surface-container p-4">
+                <div class="flex justify-between items-center mb-3">
+                  <span class="text-label-xs font-label-xs uppercase text-secondary">DTC #{{ $index + 1 }}</span>
+                  <button (click)="removeOemDtc($index)" class="btn-icon-danger" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="field-group"><label class="label">System</label><pg-combo-select [options]="oemSystemOptions" [(ngModel)]="dtc.System" placeholder="Search system..."></pg-combo-select></div>
+                  <div class="field-group"><label class="label">SubSystem</label><pg-combo-select [options]="oemSubSystemOptions" [(ngModel)]="dtc.SubSystem" placeholder="Search subsystem..."></pg-combo-select></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-3">
+                  <div class="field-group"><label class="label">Group</label><pg-combo-select [options]="groupOptions" [(ngModel)]="dtc.Group" placeholder="Search group..."></pg-combo-select></div>
+                  <div class="field-group">
+                    <label class="label">Code</label>
+                    <app-input [(ngModel)]="dtc.Code" placeholder="P0420, No code, Available, AB, 12-AB" [error]="dtc.Code && !isValidOemCode(dtc.Code) ? 'Invalid code. SAE (P0420) · hex (AB, 12345678) · hex/dec sub (12-AB, 25-121) · No code · Available' : null" />
+                  </div>
+                </div>
+                <div class="field-group mt-3">
+                  <label class="label">Types <span class="text-secondary font-normal">(common first · determines RepairStatus)</span></label>
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    @for (t of bufferNameOptions; track t; let i = $index) {
+                      @if (i === commonTypeCount && commonTypeCount > 0) {
+                        <span class="basis-full my-1 h-px bg-outline-variant"></span>
+                      }
+                      <button (click)="toggleOemType(dtc, t)" [class]="dtc.Types.includes(t) ? 'chip chip-active' : 'chip chip-inactive'">{{ t }}</button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+          @if (oemDtcs.length === 0) { <p class="empty-state">No OEM DTCs added yet</p> }
+        </section>
+
+        <!-- ═══ SECONDARY (collapsible) ═══ -->
+        <p class="pt-1 text-label-xs font-label-xs uppercase text-secondary">More options</p>
+
+        <!-- Advanced fields -->
+        <section class="card">
+          <button (click)="basicSettingsExpanded = !basicSettingsExpanded" class="collapse-header">
+            <mat-icon class="chevron text-[18px]" [style.transform]="basicSettingsExpanded ? 'rotate(180deg)' : ''">expand_more</mat-icon>
+            <span>Advanced fields</span>
+            <span class="text-label-xs text-secondary font-normal">Battery · Odometer · Voltage · RecordTime</span>
+          </button>
+          @if (basicSettingsExpanded) {
+            <div class="mt-4 space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="field-group">
+                  <label class="label">Battery Condition Status</label>
+                  <app-select [(ngModel)]="batteryConditionStatus" [options]="batterySelectOptions" [fullWidth]="true" />
+                </div>
+                <div class="field-group">
+                  <label class="label">Odometer</label>
+                  <div class="flex gap-2">
+                    <input type="number" [(ngModel)]="odometerValue" placeholder="42892" class="input flex-1" min="0" />
+                    <div class="w-24 shrink-0"><app-select [(ngModel)]="odometerUnit" [options]="odoUnitSelectOptions" [fullWidth]="true" /></div>
+                  </div>
+                </div>
+                <div class="field-group">
+                  <label class="label">Battery Voltage (V)</label>
+                  <input type="number" [(ngModel)]="batteryVoltageValue" placeholder="11.65" step="0.01" min="0" class="input font-code-sm" />
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="label">Record Time <span class="text-label-xs text-secondary font-normal">(ms per segment)</span></label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mt-1">
+                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">OBD2</label><input type="number" [(ngModel)]="recordTime.OBD2" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">ABS</label><input type="number" [(ngModel)]="recordTime.ABS" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">TCM</label><input type="number" [(ngModel)]="recordTime.TCM" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">ODO</label><input type="number" [(ngModel)]="recordTime.ODO" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">ECM_PCM</label><input type="number" [(ngModel)]="recordTime.ECM_PCM" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">SIL</label><input type="number" [(ngModel)]="recordTime.SIL" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">ABS_LIGHT</label><input type="number" [(ngModel)]="recordTime.ABS_LIGHT" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">OFM_ITEMS</label><input type="number" [(ngModel)]="recordTime.OFM_ITEMS" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">TPMS</label><input type="number" [(ngModel)]="recordTime.TPMS" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                  <div><label class="text-label-xs text-secondary font-code-sm block mb-0.5">TPMS_LIGHT</label><input type="number" [(ngModel)]="recordTime.TPMS_LIGHT" class="input !py-1 text-body-sm" min="0" placeholder="ms" /></div>
+                </div>
+              </div>
+            </div>
+          }
+        </section>
+
+        <!-- Vehicle Profile -->
+        <section class="card">
+          <button (click)="showVinProfile = !showVinProfile" class="collapse-header">
+            <mat-icon class="chevron text-[18px]" [style.transform]="showVinProfile ? 'rotate(180deg)' : ''">expand_more</mat-icon>
+            <span>Vehicle Profile</span>
+            <span class="text-label-xs text-secondary font-normal">→ VinProfileRaw + VehicleInfoEcmRaw</span>
+          </button>
+          @if (showVinProfile) {
+            <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div class="field-group"><label class="label">Manufacturer</label><pg-combo-select [options]="mfrOptions" [(ngModel)]="vinProfile.Manufacturer" placeholder="Search manufacturer..."></pg-combo-select></div>
+              <div class="field-group"><label class="label">Year</label><pg-combo-select [options]="yearOptions" [(ngModel)]="vinProfile.Year" placeholder="Search year..."></pg-combo-select></div>
+              <div class="field-group"><label class="label">Make</label><pg-combo-select [options]="makeOptions" [(ngModel)]="vinProfile.Make" placeholder="Search make..."></pg-combo-select></div>
+              <div class="field-group"><label class="label">Model</label><pg-combo-select [options]="modelOptions" [(ngModel)]="vinProfile.Model" placeholder="Search model..."></pg-combo-select></div>
+              <div class="field-group"><label class="label">Engine</label><pg-combo-select [options]="engineOptions" [(ngModel)]="vinProfile.Engine" placeholder="Search engine..."></pg-combo-select></div>
+              <div class="field-group"><label class="label">Trim</label><pg-combo-select [options]="trimOptions" [(ngModel)]="vinProfile.Trim" placeholder="Search trim..."></pg-combo-select></div>
+              <div class="field-group"><label class="label">Transmission</label><pg-combo-select [options]="transmissionOptions" [(ngModel)]="vinProfile.Transmission" placeholder="Search transmission..."></pg-combo-select></div>
+              <div class="field-group"><label class="label">_Make_Enum</label><pg-combo-select [options]="oemMakeOptions" [ngModel]="oemMakeEnum" (ngModelChange)="onOemMakeChange($event)" placeholder="Search make..."></pg-combo-select></div>
+            </div>
+          }
+        </section>
+
+        <!-- Monitors -->
+        <section class="card">
+          <button (click)="showMonitors = !showMonitors" class="collapse-header">
+            <mat-icon class="chevron text-[18px]" [style.transform]="showMonitors ? 'rotate(180deg)' : ''">expand_more</mat-icon>
+            <span>Monitors</span>
+            <span class="text-label-xs text-secondary font-normal">ECU + TCU → MonitorStatus*Raw</span>
+            @if (ecuMonitors.length + tcuMonitors.length > 0) { <span class="count-badge">{{ ecuMonitors.length + tcuMonitors.length }}</span> }
+          </button>
+          @if (showMonitors) {
+            <div class="mt-4 space-y-5">
+              <!-- ECU Monitors -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-body-sm font-medium text-on-surface">ECU Monitors <span class="text-label-xs font-code-sm text-secondary">→ MonitorStatusEcmRaw</span></span>
+                  <button (click)="addEcuMonitor()" class="btn-icon" title="Add Monitor"><mat-icon class="text-[18px]">add</mat-icon></button>
+                </div>
+                <div class="space-y-2">
+                  @for (m of ecuMonitors; track $index) {
+                    <div class="flex items-center gap-3 group">
+                      <div class="flex-1 flex items-center gap-2">
+                        <select [(ngModel)]="m.Name" class="input">@for (n of MONITOR_NAMES; track n) { <option [value]="n">{{ n }}</option> }</select>
+                        <select [ngModel]="m.Key" (ngModelChange)="onMonitorKeyChange(m, $event)" class="input !w-52 shrink-0">@for (k of MONITOR_KEY_OPTIONS; track k.value) { <option [ngValue]="k.value">{{ k.label }}</option> }</select>
+                      </div>
+                      <button (click)="removeEcuMonitor($index)" class="btn-icon-danger" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
+                    </div>
+                  }
+                </div>
+                @if (ecuMonitors.length === 0) { <p class="empty-state">No ECU monitors — template defaults will be used</p> }
+              </div>
+              <!-- TCU Monitors -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-body-sm font-medium text-on-surface">TCU Monitors <span class="text-label-xs font-code-sm text-secondary">→ MonitorStatusTcmRaw</span></span>
+                  <button (click)="addTcuMonitor()" class="btn-icon" title="Add Monitor"><mat-icon class="text-[18px]">add</mat-icon></button>
+                </div>
+                <div class="space-y-2">
+                  @for (m of tcuMonitors; track $index) {
+                    <div class="flex items-center gap-3 group">
+                      <div class="flex-1 flex items-center gap-2">
+                        <select [(ngModel)]="m.Name" class="input">@for (n of MONITOR_NAMES; track n) { <option [value]="n">{{ n }}</option> }</select>
+                        <select [(ngModel)]="m.Key" class="input !w-52 shrink-0">@for (k of MONITOR_KEY_OPTIONS; track k.value) { <option [ngValue]="k.value">{{ k.label }}</option> }</select>
+                      </div>
+                      <button (click)="removeTcuMonitor($index)" class="btn-icon-danger" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
+                    </div>
+                  }
+                </div>
+                @if (tcuMonitors.length === 0) { <p class="empty-state">No TCU monitors — template defaults will be used</p> }
+              </div>
+            </div>
+          }
+        </section>
+
+        <!-- Freeze Frame -->
+        <section class="card">
+          <button (click)="showFreezeFrame = !showFreezeFrame" class="collapse-header">
+            <mat-icon class="chevron text-[18px]" [style.transform]="showFreezeFrame ? 'rotate(180deg)' : ''">expand_more</mat-icon>
+            <span>Freeze Frame</span>
+            <span class="text-label-xs text-secondary font-normal">ECU + TCU → FreezeFrame*Raw</span>
+            @if (ecuFreezeFrame.length + tcuFreezeFrame.length > 0) { <span class="count-badge">{{ ecuFreezeFrame.length + tcuFreezeFrame.length }}</span> }
+          </button>
+          @if (showFreezeFrame) {
+            <div class="mt-4 space-y-5">
+              <!-- ECU Freeze Frame -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-body-sm font-medium text-on-surface">ECU Freeze Frame <span class="text-label-xs font-code-sm text-secondary">→ FreezeFrameEcmRaw</span></span>
+                  <button (click)="addEcuFreezeFrameItem()" class="btn-icon" title="Add Item"><mat-icon class="text-[18px]">add</mat-icon></button>
+                </div>
+                <div class="space-y-3">
+                  @for (ff of ecuFreezeFrame; track $index) {
+                    <div class="rounded-lg border border-outline-variant bg-surface-container p-3 group">
+                      <div class="flex items-center gap-3 mb-2">
+                        <div class="flex-1 grid grid-cols-2 gap-2">
+                          <pg-ff-combo-select [options]="freezeFrameOptions" [(ngModel)]="$any(ff)._label" (ngModelChange)="onFreezeFrameLabelInput(ff)" placeholder="Search PID name…"></pg-ff-combo-select>
+                          <input type="text" [ngModel]="ff.Unit" disabled placeholder="Unit" class="input opacity-60" />
+                        </div>
+                        <button (click)="removeEcuFreezeFrameItem($index)" class="btn-icon-danger" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-label-xs text-secondary font-medium">Values:</span>
+                        @for (v of ff.Values; track trackByIndex($index)) {
+                          <div class="flex items-center gap-1">
+                            <div class="w-28"><app-input [ngModel]="ff.Values[$index]" (ngModelChange)="onFreezeFrameValueChange(ff, $index, $event)" placeholder="Value" /></div>
+                            @if (ff.Values.length > 1) {
+                              <button (click)="removeFreezeFrameValue(ff, $index)" class="btn-icon-danger !p-1" title="Remove value"><mat-icon class="text-[13px]">delete</mat-icon></button>
+                            }
+                          </div>
+                        }
+                        <button (click)="addFreezeFrameValue(ff)" class="btn-icon !p-1" title="Add value"><mat-icon class="text-[13px]">add</mat-icon></button>
+                      </div>
+                      @if (hasFfDtcValueErrors(ff)) { <p class="hint-error mt-1">SAE format: P/C/B/U + digit 0-3 + 3 hex chars (e.g. P0420)</p> }
+                    </div>
+                  }
+                </div>
+                @if (ecuFreezeFrame.length === 0) { <p class="empty-state">No ECU freeze frame items — template defaults will be used</p> }
+              </div>
+              <!-- TCU Freeze Frame -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-body-sm font-medium text-on-surface">TCU Freeze Frame <span class="text-label-xs font-code-sm text-secondary">→ FreezeFrameTcmRaw</span></span>
+                  <button (click)="addTcuFreezeFrameItem()" class="btn-icon" title="Add Item"><mat-icon class="text-[18px]">add</mat-icon></button>
+                </div>
+                <div class="space-y-3">
+                  @for (ff of tcuFreezeFrame; track $index) {
+                    <div class="rounded-lg border border-outline-variant bg-surface-container p-3 group">
+                      <div class="flex items-center gap-3 mb-2">
+                        <div class="flex-1 grid grid-cols-2 gap-2">
+                          <pg-ff-combo-select [options]="freezeFrameOptions" [(ngModel)]="$any(ff)._label" (ngModelChange)="onFreezeFrameLabelInput(ff)" placeholder="Search PID name…"></pg-ff-combo-select>
+                          <input type="text" [ngModel]="ff.Unit" disabled placeholder="Unit" class="input opacity-60" />
+                        </div>
+                        <button (click)="removeTcuFreezeFrameItem($index)" class="btn-icon-danger" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-label-xs text-secondary font-medium">Values:</span>
+                        @for (v of ff.Values; track trackByIndex($index)) {
+                          <div class="flex items-center gap-1">
+                            <div class="w-28"><app-input [(ngModel)]="ff.Values[$index]" placeholder="Value" /></div>
+                            @if (ff.Values.length > 1) {
+                              <button (click)="removeFreezeFrameValue(ff, $index)" class="btn-icon-danger !p-1" title="Remove value"><mat-icon class="text-[13px]">delete</mat-icon></button>
+                            }
+                          </div>
+                        }
+                        <button (click)="addFreezeFrameValue(ff)" class="btn-icon !p-1" title="Add value"><mat-icon class="text-[13px]">add</mat-icon></button>
+                      </div>
+                      @if (hasFfDtcValueErrors(ff)) { <p class="hint-error mt-1">SAE format: P/C/B/U + digit 0-3 + 3 hex chars (e.g. P0420)</p> }
+                    </div>
+                  }
+                </div>
+                @if (tcuFreezeFrame.length === 0) { <p class="empty-state">No TCU freeze frame items — template defaults will be used</p> }
+              </div>
+              <p class="text-label-xs text-amber-600">⚠ Freeze frame requires ≥ 2 items to decode correctly</p>
+            </div>
+          }
+        </section>
+
+        <!-- TCU DTCs -->
+        <section class="card">
+          <button (click)="showTcuDtcs = !showTcuDtcs" class="collapse-header">
+            <mat-icon class="chevron text-[18px]" [style.transform]="showTcuDtcs ? 'rotate(180deg)' : ''">expand_more</mat-icon>
+            <span>TCU DTCs</span>
+            <span class="text-label-xs text-secondary font-normal">→ DtcsTcmRaw</span>
+            @if (bufTcuDtcs.length > 0) { <span class="count-badge">{{ bufTcuDtcs.length }}</span> }
+          </button>
+          @if (showTcuDtcs) {
+            <div class="mt-4">
+              <div class="flex justify-end mb-2">
+                <button (click)="addBufTcuDtc()" class="btn-icon" title="Add TCU DTC"><mat-icon class="text-[18px]">add</mat-icon></button>
+              </div>
+              <div class="space-y-2">
+                @for (dtc of bufTcuDtcs; track $index) {
+                  <div class="flex items-start gap-3 group">
+                    <div class="flex-1"><app-input [(ngModel)]="dtc.code" placeholder="P0700" [error]="dtc.code && !isValidEcuCode(dtc.code) ? 'SAE: P/C/B/U + digit 0-3 + 3 hex (e.g. P0700, C1101)' : null" /></div>
+                    <div class="w-40 shrink-0"><app-select [(ngModel)]="dtc.type" [options]="dtcTypeSelectOptions" [fullWidth]="true" /></div>
+                    <button (click)="removeBufTcuDtc($index)" class="btn-icon-danger mt-1" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
+                  </div>
+                }
+              </div>
+              @if (bufTcuDtcs.length === 0) { <p class="empty-state">No TCU DTCs added — template defaults will be used</p> }
+            </div>
+          }
+        </section>
+
+        <!-- OFM -->
+        <section class="card">
+          <button (click)="showOfm = !showOfm" class="collapse-header">
+            <mat-icon class="chevron text-[18px]" [style.transform]="showOfm ? 'rotate(180deg)' : ''">expand_more</mat-icon>
+            <span>OFM</span>
+            <span class="text-label-xs text-secondary font-normal">(uses _Make_Enum from Vehicle Profile)</span>
+            @if (ofmItems.length > 0) { <span class="count-badge">{{ ofmItems.length }}</span> }
+          </button>
+          @if (showOfm) {
+            <div class="mt-4">
+              <div class="flex justify-end mb-2">
+                <button (click)="addOfmItem()" class="btn-icon" title="Add OFM item"><mat-icon class="text-[18px]">add</mat-icon></button>
+              </div>
+              <div class="space-y-3">
+                @for (item of ofmItems; track $index) {
+                  <div class="rounded-lg border border-outline-variant bg-surface-container p-4 group">
+                    <div class="flex justify-between items-center mb-3">
+                      <span class="text-label-xs font-label-xs uppercase text-secondary">Item #{{ $index + 1 }}</span>
+                      <button (click)="removeOfmItem($index)" class="btn-icon-danger" title="Remove"><mat-icon class="text-[16px]">delete</mat-icon></button>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-2">
+                      <div class="field-group sm:col-span-2">
+                        <label class="label">Item Name</label>
+                        <pg-combo-select [options]="ofmItemOptions" [ngModel]="item.ItemId" (ngModelChange)="onOfmItemSelect(item, $event)" [fallbackName]="item.ItemName" placeholder="Search item..."></pg-combo-select>
+                      </div>
+                      <div class="field-group"><label class="label">Item ID</label><input type="number" [ngModel]="item.ItemId" disabled class="input font-code-sm opacity-60" /></div>
+                      <div class="field-group"><label class="label">Desc Enum</label><input type="number" [ngModel]="item.ItemDescriptionEnum" disabled class="input font-code-sm opacity-60" /></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                      <div class="field-group"><label class="label">Value</label><app-input [(ngModel)]="item.Value" placeholder="33.93" /></div>
+                      <div class="field-group"><label class="label">Unit</label><input type="text" [ngModel]="item.Unit" disabled placeholder="Unit" class="input font-code-sm opacity-60" /></div>
+                    </div>
+                  </div>
+                }
+              </div>
+              @if (ofmItems.length === 0) { <p class="empty-state">No OFM items — template defaults will be used</p> }
+            </div>
+          }
+        </section>
+
+        <!-- Result -->
+        @if (result()) {
+          <section #resultSection class="card">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span class="inline-block h-2 w-2 rounded-full bg-green-500"></span>
+                <h3 class="section-title">Result</h3>
+                @if (lastGenerated() === 'buffers') { <span class="text-label-xs font-code-sm text-secondary">VehicleBuffersResponse</span> }
+              </div>
+              <button (click)="copyResult()" class="btn-icon" title="Copy to clipboard">
+                <mat-icon class="text-[16px]" [class.text-green-600]="copied()">{{ copied() ? 'check' : 'content_copy' }}</mat-icon>
+              </button>
+            </div>
+            <textarea readonly [value]="result()" [rows]="lastGenerated() === 'buffers' ? 16 : 6" class="result-textarea"></textarea>
+          </section>
+        } @else if (loading()) {
+          <section class="card">
+            <div class="flex flex-col items-center justify-center gap-3 py-10 text-center">
+              <mat-icon class="animate-spin text-[32px] text-primary">progress_activity</mat-icon>
+              <p class="text-body-sm text-secondary">
+                {{ generatingFor() === 'buffers' ? 'Generating raw buffers…' : 'Generating raw payload…' }}
+              </p>
+            </div>
+          </section>
+        }
+      }
+
+      <!-- ═══ OEM Combine tab ═══ -->
+      @if (activeTab === 'combine') {
+        <section class="card">
+          <div class="flex items-center gap-2 mb-4">
+            <mat-icon class="text-[16px] text-secondary">tune</mat-icon>
+            <h3 class="section-title">Combine OEM Module Raw</h3>
+          </div>
+          <div class="field-group mb-4">
+            <label class="label">VinProfileRaw (base64)</label>
+            <app-input [(ngModel)]="combineVinProfileRawInput" placeholder="Paste VinProfileRaw base64 (from Vehicle Buffers output)" />
+          </div>
+          <div class="field-group mb-4">
+            <label class="label">OemModuleRaw (base64 blocks, JSON array)</label>
+            <app-textarea [(ngModel)]="combineOemRawInput" [rows]="8" placeholder='Paste OemModuleRaw JSON array, e.g. ["base64...", "base64..."]' />
+          </div>
+          <div class="flex justify-end pt-1 mb-4">
+            <app-button icon="merge" [loading]="combineLoading()" [disabled]="combineLoading() || !combineOemRawInput.trim()" (click)="combineOemModule()">Combine</app-button>
+          </div>
+          @if (combineResult()) {
+            <div class="field-group">
+              <div class="flex items-center justify-between mb-2">
+                <label class="label !mb-0">OemModuleRawPayload</label>
+                <button (click)="copyCombineResult()" class="btn-icon" title="Copy to clipboard">
+                  <mat-icon class="text-[16px]" [class.text-green-600]="combineCopied()">{{ combineCopied() ? 'check' : 'content_copy' }}</mat-icon>
+                </button>
+              </div>
+              <textarea readonly [value]="combineResult()" rows="4" class="result-textarea"></textarea>
+            </div>
+          } @else if (combineLoading()) {
+            <div class="flex flex-col items-center justify-center gap-3 py-8 text-center">
+              <mat-icon class="animate-spin text-[28px] text-primary">progress_activity</mat-icon>
+              <p class="text-body-sm text-secondary">Combining OEM module…</p>
+            </div>
+          }
+        </section>
+      }
+    </div>
+
+    <!-- Footer: generate actions -->
+    @if (activeTab !== 'combine') {
+      <div class="flex items-center justify-end gap-3 border-t border-outline-variant px-5 py-4">
+        <app-button variant="secondary" icon="data_object" [loading]="loading() && generatingFor() === 'buffers'" [disabled]="loading() || hasValidationErrors()" (click)="generateBuffers()">Generate Raw Buffers</app-button>
+        <app-button icon="bolt" [loading]="loading() && generatingFor() === 'payload'" [disabled]="loading() || hasValidationErrors()" (click)="generatePayload()">Generate Raw Payload</app-button>
+      </div>
+    }
+  </div>
+
+  <!-- ─── Import Payload sub-modal ─── -->
+  @if (showImportModal()) {
+    <div class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <button type="button" aria-label="Close" class="fixed inset-0 bg-slate-900/50" (click)="closeImportModal()"></button>
+      <div class="relative z-10 w-full max-w-lg rounded-xl bg-surface-container-lowest shadow-xl">
+        <div class="flex items-center justify-between border-b border-outline-variant px-5 py-4">
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-[18px] text-primary">upload_file</mat-icon>
+            <h3 class="text-title-sm font-title-sm font-semibold text-on-surface">Import Raw Payload</h3>
+          </div>
+          <button type="button" (click)="closeImportModal()" class="text-secondary hover:text-on-surface"><mat-icon class="text-[20px]">close</mat-icon></button>
+        </div>
+        <div class="px-5 py-4">
+          <div class="field-group mb-3">
+            <label class="label">Base64 Payload</label>
+            <app-textarea [(ngModel)]="importPayloadText" [rows]="6" placeholder="Paste the base64 raw payload here..." [error]="importError() || null" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 border-t border-outline-variant px-5 py-4">
+          <app-button variant="secondary" [disabled]="importLoading()" (click)="closeImportModal()">Cancel</app-button>
+          <app-button icon="upload_file" [loading]="importLoading()" [disabled]="importLoading() || !importPayloadText.trim()" (click)="importPayload()">Import</app-button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

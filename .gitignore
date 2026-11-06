@@ -1,0 +1,35 @@
+# ===================== Secrets — never commit =====================
+# Real config (connection strings, AI API key, encryption key). Copy
+# src/backend/RegressionPlatform.API/appsettings.Example.json and fill in locally.
+src/backend/RegressionPlatform.API/appsettings.json
+src/backend/RegressionPlatform.API/appsettings.*.json
+!src/backend/RegressionPlatform.API/appsettings.Example.json
+
+# Data / migration tools hold live credentials, API keys, tokens and customer data.
+tools/
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# ===================== .NET =====================
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.rsuser
+TestResults/
+*.log
+
+# ===================== Angular / Node =====================
+node_modules/
+.angular/
+dist/
+coverage/
+/src/frontend/RegressionPlatform.UI/tmp/
+
+# ===================== OS / editors =====================
+.DS_Store
+Thumbs.db
+.idea/
+*.swp

@@ -1,0 +1,63 @@
+<div class="relative overflow-x-auto">
+  @if (loading()) {
+    <div class="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-slate-50/70 dark:bg-slate-900/50">
+      <mat-icon class="animate-spin text-[20px] text-primary">progress_activity</mat-icon>
+      <span class="text-body-sm text-secondary">Loading…</span>
+    </div>
+  }
+  <table class="w-full border-collapse text-left">
+    <thead>
+      <tr class="border-b border-outline-variant bg-surface-container-low">
+        @for (col of columns(); track col.key) {
+          <th
+            class="px-4 py-3 text-label-xs font-label-xs uppercase tracking-wider"
+            [ngClass]="(col.widthClass || '') + ' ' + (col.headerClass || '')"
+            [class.text-secondary]="!col.headerClass"
+            [class.text-right]="col.align === 'right'"
+            [class.text-center]="col.align === 'center'"
+          >
+            @if (headerTemplateFor(col.key); as headerTpl) {
+              <ng-container [ngTemplateOutlet]="headerTpl" [ngTemplateOutletContext]="{ $implicit: col }" />
+            } @else if (col.sortable) {
+              <button
+                type="button"
+                (click)="onHeaderClick(col)"
+                class="inline-flex items-center gap-1 uppercase transition-colors hover:text-primary"
+              >
+                {{ col.label }}
+                <mat-icon class="text-[16px]">{{ sortIcon(col) }}</mat-icon>
+              </button>
+            } @else {
+              {{ col.label }}
+            }
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track $index) {
+        <tr class="h-row-height-md border-b border-outline-variant transition-colors hover:bg-surface-container-low">
+          @for (col of columns(); track col.key) {
+            <td
+              class="px-4 py-2"
+              [class.text-right]="col.align === 'right'"
+              [class.text-center]="col.align === 'center'"
+            >
+              @if (templateFor(col.key); as tpl) {
+                <ng-container [ngTemplateOutlet]="tpl" [ngTemplateOutletContext]="{ $implicit: row }" />
+              } @else {
+                <span class="text-body-sm text-on-surface">{{ cellText(row, col.key) }}</span>
+              }
+            </td>
+          }
+        </tr>
+      } @empty {
+        <tr>
+          <td [attr.colspan]="columns().length" class="px-4 py-10 text-center text-body-sm text-secondary">
+            {{ emptyMessage() }}
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

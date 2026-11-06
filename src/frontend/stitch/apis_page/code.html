@@ -1,0 +1,486 @@
+<!DOCTYPE html><html lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>API Regression - Quản lý API</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Hanken+Grotesk:wght@600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#b7c4ff",
+                        "secondary-container": "#d0e1fb",
+                        "surface-container-highest": "#e2e1ed",
+                        "inverse-surface": "#2e3039",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-container": "#ffc9b7",
+                        "surface-container-low": "#f3f2fe",
+                        "on-primary-fixed": "#001551",
+                        "primary-container": "#1d4ed8",
+                        "tertiary-fixed": "#ffdbcf",
+                        "tertiary-fixed-dim": "#ffb59c",
+                        "surface-container": "#ededf9",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#f0f0fb",
+                        "secondary": "#505f76",
+                        "tertiary-container": "#a73400",
+                        "tertiary": "#7f2500",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "secondary-fixed": "#d3e4fe",
+                        "on-tertiary-fixed-variant": "#832700",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#0039b5",
+                        "surface-tint": "#2151da",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#dce1ff",
+                        "surface-bright": "#faf8ff",
+                        "on-surface": "#1a1b23",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-tertiary-fixed": "#390c00",
+                        "surface-dim": "#d9d9e5",
+                        "primary-fixed-dim": "#b7c4ff",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#434655",
+                        "background": "#faf8ff",
+                        "outline-variant": "#c4c5d7",
+                        "surface": "#faf8ff",
+                        "surface-container-high": "#e8e7f3",
+                        "on-background": "#1a1b23",
+                        "on-secondary-container": "#54647a",
+                        "on-primary-container": "#cad3ff",
+                        "outline": "#747686",
+                        "primary": "#0037b0",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-variant": "#e2e1ed"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "row-height-md": "48px",
+                        "row-height-sm": "36px",
+                        "container-padding": "24px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "code-sm": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "label-xs": ["Inter"],
+                        "title-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "code-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "label-xs": ["11px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "title-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["30px", { "lineHeight": "38px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-sm antialiased h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-inverse-surface dark:bg-inverse-surface text-inverse-primary dark:text-inverse-primary docked fixed h-full left-0 w-[240px] z-40 bg-inverse-surface flat no shadows flex flex-col h-full py-4 transition-all duration-300 md:translate-x-0 -translate-x-full" id="sidebar"><div class="px-6 mb-8 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-white text-[24px]">shield</span>
+        <h1 class="text-title-sm font-title-sm font-bold text-white tracking-tight">Regression Platform</h1>
+    </div>
+    <button class="md:hidden text-white/70 hover:text-white" id="closeSidebar">
+        <span class="material-symbols-outlined">close</span>
+    </button>
+</div>
+<div class="flex-1 overflow-y-auto scrollbar-hide px-2 space-y-1">
+    <a class="text-white/70 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10" href="#">
+        <span class="material-symbols-outlined">home</span>
+        <span class="text-body-sm font-body-sm">Dashboard</span>
+    </a>
+    <div class="space-y-1">
+        <button class="w-full text-white/70 hover:text-white flex items-center justify-between px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined">folder</span>
+                <span class="text-body-sm font-body-sm">Projects</span>
+            </div>
+            <span class="material-symbols-outlined text-[18px]">expand_more</span>
+        </button>
+        <div class="ml-4 space-y-1">
+            <div class="bg-primary text-white flex items-center justify-between px-4 py-2 rounded-lg mx-2">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined">target</span>
+                    <span class="text-body-sm font-body-sm">O'Reilly</span>
+                </div>
+                <span class="material-symbols-outlined text-[16px]">unfold_more</span>
+            </div>
+            <div class="ml-4 space-y-1 border-l border-white/10">
+                <a class="text-white/70 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10" href="#">
+                    <span class="material-symbols-outlined">grid_view</span>
+                    <span class="text-body-sm font-body-sm">Dashboard</span>
+                </a>
+                <a class="bg-primary text-white flex items-center gap-3 px-4 py-2 rounded-lg mx-2" href="#">
+                    <span class="material-symbols-outlined">code</span>
+                    <span class="text-body-sm font-body-sm">APIs</span>
+                </a>
+                <a class="text-white/70 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10" href="#">
+                    <span class="material-symbols-outlined">inbox</span>
+                    <span class="text-body-sm font-body-sm">Request Pool</span>
+                </a>
+                <a class="text-white/70 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10" href="#">
+                    <span class="material-symbols-outlined">history</span>
+                    <span class="text-body-sm font-body-sm">Runs</span>
+                </a>
+                <a class="text-white/70 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10" href="#">
+                    <span class="material-symbols-outlined">compare</span>
+                    <span class="text-body-sm font-body-sm">Compare</span>
+                </a>
+                <a class="text-white/70 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10" href="#">
+                    <span class="material-symbols-outlined">description</span>
+                    <span class="text-body-sm font-body-sm">Reports</span>
+                </a>
+                <a class="text-white/70 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10" href="#">
+                    <span class="material-symbols-outlined">rule</span>
+                    <span class="text-body-sm font-body-sm">Ignore Rules</span>
+                </a>
+                <a class="text-white/70 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10" href="#">
+                    <span class="material-symbols-outlined">assignment</span>
+                    <span class="text-body-sm font-body-sm">Configurations</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    <button class="w-full text-white/70 hover:text-white flex items-center justify-between px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined">directions_car</span>
+            <span class="text-body-sm font-body-sm">AutoZone</span>
+        </div>
+        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+    </button>
+    <button class="w-full text-white/70 hover:text-white flex items-center justify-between px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined">sell</span>
+            <span class="text-body-sm font-body-sm">CARiD</span>
+        </div>
+        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+    </button>
+    <button class="w-full text-white/70 hover:text-white flex items-center justify-between px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined">check_circle</span>
+            <span class="text-body-sm font-body-sm">Innova</span>
+        </div>
+        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+    </button>
+    <a class="text-white/70 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg mx-2 transition-colors hover:bg-white/10 mt-auto border-t border-white/10 pt-4" href="#">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="text-body-sm font-body-sm">Settings</span>
+    </a>
+</div></nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col md:ml-[240px] w-full md:w-[calc(100%-240px)] min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-container text-primary dark:text-inverse-primary docked sticky top-0 w-full z-30 border-b border-outline-variant flat no shadows flex justify-between items-center h-[64px] px-6">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-secondary hover:text-primary transition-colors p-2 -ml-2 rounded-full hover:bg-surface-container-low" id="openSidebar">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="hidden sm:flex items-center gap-2 text-body-sm font-body-sm text-secondary">
+<span class="hover:text-primary cursor-pointer transition-colors">API Regression System</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-primary font-medium">APIs</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="hidden md:flex gap-4 mr-4">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 text-label-xs font-label-xs uppercase" href="#">Dashboard</a>
+<a class="text-secondary hover:text-primary transition-colors text-label-xs font-label-xs uppercase pb-1" href="#">System Health</a>
+</div>
+<button class="text-secondary hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full p-2 hover:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-secondary hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full p-2 hover:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-body-sm ml-2 cursor-pointer">
+                    A
+                </div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 overflow-y-auto p-container-padding bg-[#F8FAFC]">
+<!-- Page Header -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+<div>
+<h2 class="text-title-sm font-title-sm text-on-surface">APIs</h2>
+<p class="text-body-sm font-body-sm text-secondary mt-1">Danh sách API</p>
+</div>
+<button class="bg-[#1D4ED8] hover:bg-primary text-white px-4 py-2 rounded-lg text-body-sm font-body-sm font-medium flex items-center gap-2 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Thêm API
+                </button>
+</div>
+<!-- Main Card -->
+<div class="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden flex flex-col">
+<!-- Filters & Search Toolbar -->
+<div class="p-4 border-b border-[#F1F5F9] flex flex-col sm:flex-row gap-4 items-center justify-between bg-white">
+<div class="relative w-full sm:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+<input class="w-full pl-9 pr-4 py-2 border border-[#CBD5E1] rounded-lg text-body-sm font-body-sm focus:ring-2 focus:ring-[#1D4ED8] focus:border-[#1D4ED8] outline-none transition-shadow" placeholder="Tìm kiếm API..." type="text">
+</div>
+<div class="flex items-center gap-3 w-full sm:w-auto">
+<span class="text-body-sm font-body-sm text-secondary whitespace-nowrap">Trạng thái</span>
+<select class="w-full sm:w-auto border border-[#CBD5E1] rounded-lg text-body-sm font-body-sm py-2 pl-3 pr-8 focus:ring-2 focus:ring-[#1D4ED8] focus:border-[#1D4ED8] outline-none bg-white">
+<option value="all">Tất cả</option>
+<option value="active">Active</option>
+<option value="inactive">Inactive</option>
+</select>
+</div>
+</div>
+<!-- Data Table Container -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-[#F8FAFC] border-b border-[#F1F5F9]">
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase tracking-wider font-semibold w-24">API ID</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase tracking-wider font-semibold">Tên API</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase tracking-wider font-semibold w-24">Method</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase tracking-wider font-semibold">Endpoint</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase tracking-wider font-semibold text-right w-28">Requests</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase tracking-wider font-semibold w-28">Trạng thái</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase tracking-wider font-semibold text-center w-24">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#F1F5F9]">
+<tr class="hover:bg-[#F1F5F9] transition-colors h-row-height-md">
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-[#1D4ED8] font-medium cursor-pointer hover:underline">API-001</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-on-surface">GetMostLikelyFixForVehicle</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-on-surface font-medium bg-slate-100 px-2 py-1 rounded">POST</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-code-sm font-code-sm text-secondary">/api/v1/fix/match</span>
+</td>
+<td class="px-4 py-2 text-right">
+<span class="text-body-sm font-body-sm text-on-surface">2,450</span>
+</td>
+<td class="px-4 py-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-xs font-label-xs bg-green-50 text-green-700 border border-green-200">
+                                        Active
+                                    </span>
+</td>
+<td class="px-4 py-2">
+<div class="flex items-center justify-center gap-2">
+<button class="text-slate-400 hover:text-[#1D4ED8] transition-colors" title="Edit">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="text-slate-400 hover:text-red-600 transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-[#F1F5F9] transition-colors h-row-height-md">
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-[#1D4ED8] font-medium cursor-pointer hover:underline">API-002</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-on-surface">GetDTCLibraryErrorCode</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-on-surface font-medium bg-slate-100 px-2 py-1 rounded">GET</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-code-sm font-code-sm text-secondary">/api/v1/dtc/{code}</span>
+</td>
+<td class="px-4 py-2 text-right">
+<span class="text-body-sm font-body-sm text-on-surface">1,120</span>
+</td>
+<td class="px-4 py-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-xs font-label-xs bg-green-50 text-green-700 border border-green-200">
+                                        Active
+                                    </span>
+</td>
+<td class="px-4 py-2">
+<div class="flex items-center justify-center gap-2">
+<button class="text-slate-400 hover:text-[#1D4ED8] transition-colors" title="Edit">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="text-slate-400 hover:text-red-600 transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-[#F1F5F9] transition-colors h-row-height-md">
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-[#1D4ED8] font-medium cursor-pointer hover:underline">API-003</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-on-surface">GetPartsByVIN</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-on-surface font-medium bg-slate-100 px-2 py-1 rounded">POST</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-code-sm font-code-sm text-secondary">/api/v1/parts/by-vin</span>
+</td>
+<td class="px-4 py-2 text-right">
+<span class="text-body-sm font-body-sm text-on-surface">3,210</span>
+</td>
+<td class="px-4 py-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-xs font-label-xs bg-green-50 text-green-700 border border-green-200">
+                                        Active
+                                    </span>
+</td>
+<td class="px-4 py-2">
+<div class="flex items-center justify-center gap-2">
+<button class="text-slate-400 hover:text-[#1D4ED8] transition-colors" title="Edit">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="text-slate-400 hover:text-red-600 transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-[#F1F5F9] transition-colors h-row-height-md">
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-[#1D4ED8] font-medium cursor-pointer hover:underline">API-004</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-on-surface">GetVehicleInfo</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-on-surface font-medium bg-slate-100 px-2 py-1 rounded">GET</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-code-sm font-code-sm text-secondary">/api/v1/vehicle/{vin}</span>
+</td>
+<td class="px-4 py-2 text-right">
+<span class="text-body-sm font-body-sm text-on-surface">1,890</span>
+</td>
+<td class="px-4 py-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-xs font-label-xs bg-green-50 text-green-700 border border-green-200">
+                                        Active
+                                    </span>
+</td>
+<td class="px-4 py-2">
+<div class="flex items-center justify-center gap-2">
+<button class="text-slate-400 hover:text-[#1D4ED8] transition-colors" title="Edit">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="text-slate-400 hover:text-red-600 transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-[#F1F5F9] transition-colors h-row-height-md">
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-[#1D4ED8] font-medium cursor-pointer hover:underline">API-005</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-on-surface">GetLaborTimes</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-body-sm font-body-sm text-on-surface font-medium bg-slate-100 px-2 py-1 rounded">POST</span>
+</td>
+<td class="px-4 py-2">
+<span class="text-code-sm font-code-sm text-secondary">/api/v1/labor/time</span>
+</td>
+<td class="px-4 py-2 text-right">
+<span class="text-body-sm font-body-sm text-on-surface">2,180</span>
+</td>
+<td class="px-4 py-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-xs font-label-xs bg-green-50 text-green-700 border border-green-200">
+                                        Active
+                                    </span>
+</td>
+<td class="px-4 py-2">
+<div class="flex items-center justify-center gap-2">
+<button class="text-slate-400 hover:text-[#1D4ED8] transition-colors" title="Edit">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="text-slate-400 hover:text-red-600 transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-[#F1F5F9] flex flex-col sm:flex-row items-center justify-between gap-4 bg-white">
+<span class="text-body-sm font-body-sm text-secondary">Hiển thị 1-5 của 126 API</span>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-[#E2E8F0] text-secondary hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-[#1D4ED8] text-white font-medium text-body-sm font-body-sm">
+                            1
+                        </button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-[#E2E8F0] text-secondary hover:bg-slate-50 transition-colors font-medium text-body-sm font-body-sm">
+                            2
+                        </button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-[#E2E8F0] text-secondary hover:bg-slate-50 transition-colors font-medium text-body-sm font-body-sm">
+                            3
+                        </button>
+<span class="px-2 text-secondary">...</span>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-[#E2E8F0] text-secondary hover:bg-slate-50 transition-colors font-medium text-body-sm font-body-sm">
+                            26
+                        </button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-[#E2E8F0] text-secondary hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+        // Simple sidebar toggle for mobile
+        const sidebar = document.getElementById('sidebar');
+        const openBtn = document.getElementById('openSidebar');
+        const closeBtn = document.getElementById('closeSidebar');
+
+        openBtn.addEventListener('click', () => {
+            sidebar.classList.remove('-translate-x-full');
+        });
+
+        closeBtn.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+        });
+    </script>
+
+
+</body></html>

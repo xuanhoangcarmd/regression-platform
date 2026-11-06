@@ -1,0 +1,134 @@
+// Angular Material theming
+// For more information: https://material.angular.io/guide/theming
+@use '@angular/material' as mat;
+// Design tokens — emits the CSS custom properties (light + dark). Single
+// source of truth: src/styles/_tokens.scss. See docs/rules/angular/design-tokens.md.
+@use 'styles/tokens';
+
+// Include the common Material styles once.
+@include mat.core();
+
+// Light + dark Material themes (M3). Brand palette is azure (~#1890FF family);
+// the exact brand hex lives in the design tokens for Tailwind/components.
+$rp-light-theme: mat.define-theme(
+  (
+    color: (
+      theme-type: light,
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    density: (
+      scale: 0,
+    ),
+  )
+);
+
+$rp-dark-theme: mat.define-theme(
+  (
+    color: (
+      theme-type: dark,
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    density: (
+      scale: 0,
+    ),
+  )
+);
+
+// Apply light theme by default; override only the COLORS in dark mode so the
+// Material toggle stays in lockstep with the design-token dark overrides.
+:root {
+  @include mat.all-component-themes($rp-light-theme);
+}
+:root[data-theme='dark'] {
+  @include mat.all-component-colors($rp-dark-theme);
+}
+
+// Tailwind layers (preflight disabled in tailwind.config.js for Material compat)
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global base — Tailwind preflight is off, so set the essentials here. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  // Preflight is off, so restore its border reset — otherwise `border-*` width
+  // utilities render nothing on non-form elements (default border-style: none).
+  border-width: 0;
+  border-style: solid;
+  border-color: var(--rp-outline-variant);
+}
+
+/* Reset native element chrome that preflight would normally remove. Bare
+   element selectors (specificity 0,0,1) stay below Tailwind utilities and
+   Material's class-based styles, so those are unaffected. */
+button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Headings/paragraphs keep browser default margins when preflight is off, which
+   inflates spacing. Reset them; sizing/weight come from the typography tokens. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--rp-font-body);
+  font-size: 14px; // body-md default
+  line-height: 20px;
+  color: var(--rp-on-surface);
+  background-color: var(--rp-background);
+}
+
+// Center the glyph inside <mat-icon> so icons align with adjacent text in flex
+// rows. `mat-icon.mat-icon` outranks Angular Material's own `.mat-icon` rule
+// (which forces inline-block + a fixed 24px box). Sizing the box to 1em ties it
+// to the per-use font-size (e.g. text-[16px]) so the glyph is truly centered.
+mat-icon.mat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  vertical-align: middle;
+  overflow: visible;
+}

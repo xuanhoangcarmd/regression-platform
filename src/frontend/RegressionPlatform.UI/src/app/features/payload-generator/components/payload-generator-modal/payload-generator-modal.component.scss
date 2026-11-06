@@ -1,0 +1,163 @@
+/**
+ * Payload Generator modal — component classes built on the app's design tokens so the ported
+ * form matches the site. ViewEncapsulation.None + `.pg-root` scope keeps them from leaking and
+ * lets `.pg-root .input` reach the child combo-select inputs. Adapts to light/dark via tokens.
+ */
+.pg-root {
+  // ─── Section card ─────────────────────────────────
+  .card {
+    @apply rounded-lg border border-outline-variant bg-surface-container-low p-4;
+  }
+
+  // ─── Typography ───────────────────────────────────
+  .section-title {
+    @apply text-title-sm font-title-sm text-on-surface m-0;
+  }
+
+  // ─── Collapsible section header ───────────────────
+  .collapse-header {
+    @apply flex w-full items-center gap-2 text-left text-title-sm font-title-sm text-on-surface
+      transition-colors hover:text-primary;
+  }
+
+  .chevron {
+    @apply shrink-0 transition-transform duration-200;
+  }
+
+  .label {
+    @apply block text-body-sm font-medium text-on-surface mb-1.5;
+  }
+
+  .field-group {
+    @apply flex flex-col;
+  }
+
+  // ─── Inputs ───────────────────────────────────────
+  .input {
+    @apply w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2
+      text-body-sm text-on-surface outline-none transition-shadow
+      placeholder:text-slate-400
+      focus:border-primary-container focus:ring-2 focus:ring-primary-container
+      disabled:opacity-60;
+    appearance: none;
+  }
+
+  .input-error {
+    @apply border-error focus:border-error focus:ring-error;
+  }
+
+  select.input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 2rem;
+  }
+
+  .hint-error {
+    @apply mt-1 text-body-sm text-error;
+  }
+
+  // ─── Toggle ───────────────────────────────────────
+  .toggle-wrapper {
+    @apply inline-flex items-center cursor-pointer select-none;
+  }
+
+  .toggle-track {
+    @apply relative w-11 h-6 bg-surface-container-highest rounded-full transition-colors duration-200;
+  }
+
+  .toggle-thumb {
+    @apply absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow transition-transform duration-200;
+  }
+
+  .toggle-wrapper input:checked ~ .toggle-track {
+    @apply bg-primary-container;
+  }
+
+  .toggle-wrapper input:checked ~ .toggle-track .toggle-thumb {
+    @apply translate-x-5;
+  }
+
+  // ─── Buttons ──────────────────────────────────────
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-body-sm font-medium
+      bg-primary-container text-white shadow-sm transition-colors hover:bg-primary
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-body-sm font-medium
+      border border-outline-variant bg-surface-container-lowest text-on-surface transition-colors
+      hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-lg border border-outline-variant
+      bg-surface-container-lowest p-1.5 text-secondary transition-colors
+      hover:text-primary hover:bg-surface-container-low;
+  }
+
+  .btn-icon-danger {
+    @apply inline-flex items-center justify-center rounded-lg p-1.5 text-secondary transition-colors
+      hover:text-error hover:bg-error-container;
+  }
+
+  // ─── Chips (OEM DTC types) ────────────────────────
+  .chip {
+    @apply px-2.5 py-1 text-label-xs font-label-xs rounded-full border cursor-pointer select-none transition-colors;
+  }
+
+  .chip-active {
+    @apply bg-primary-container text-white border-transparent;
+  }
+
+  .chip-inactive {
+    @apply bg-surface-container-lowest border-outline-variant text-secondary hover:text-on-surface hover:border-outline;
+  }
+
+  // ─── Count badge ──────────────────────────────────
+  .count-badge {
+    @apply ml-1 rounded-full px-2 py-0.5 text-label-xs font-label-xs text-primary;
+    background-color: color-mix(in srgb, var(--rp-primary-container) 15%, transparent);
+  }
+
+  // ─── Result / code textarea ───────────────────────
+  .result-textarea {
+    @apply w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2
+      text-code-sm font-code-sm text-on-surface resize-y
+      focus:outline-none focus:border-primary-container;
+    line-height: 1.6;
+  }
+
+  // ─── Status text ──────────────────────────────────
+  .status-on {
+    @apply text-error;
+  }
+
+  .status-off {
+    @apply text-green-600;
+  }
+
+  // ─── Empty state ──────────────────────────────────
+  .empty-state {
+    @apply text-body-sm text-secondary italic py-3 text-center;
+  }
+
+  // ─── Tabs ─────────────────────────────────────────
+  .tab-btn {
+    @apply flex-1 px-4 py-2 text-body-sm font-medium rounded-md transition-colors cursor-pointer;
+  }
+
+  .tab-active {
+    @apply bg-surface-container-lowest text-primary shadow-sm;
+  }
+
+  .tab-inactive {
+    @apply bg-transparent text-secondary hover:text-on-surface;
+  }
+
+  code {
+    @apply font-code-sm text-primary rounded px-1;
+    background-color: color-mix(in srgb, var(--rp-primary-container) 12%, transparent);
+  }
+}

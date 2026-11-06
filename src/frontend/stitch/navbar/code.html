@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Regression Platform Sidebar</title>
+<!-- Tailwind CSS v3 CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'regress-bg': '#051124', // Deep dark navy background
+            'regress-blue-active': '#1a4fcf', // Muted active blue
+            'regress-blue-bright': '#2563eb', // Brighter blue for specific items
+            'regress-hover': '#1e293b',
+            'regress-text-muted': '#94a3b8',
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom styles for the vertical line and specific spacing -->
+<style data-purpose="sidebar-layout">
+    .nested-line-container {
+      position: relative;
+    }
+    /* The vertical line on the left of nested items */
+    .nested-line-container::before {
+      content: '';
+      position: absolute;
+      left: 1.25rem;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background-color: #1e293b;
+    }
+  </style>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/></head>
+<body class="bg-gray-100 font-sans">
+<!-- BEGIN: MainSidebar -->
+<aside class="w-72 h-screen bg-regress-bg text-white flex flex-col overflow-y-auto" data-purpose="main-navigation-sidebar" id="sidebar">
+<!-- BEGIN: SidebarHeader -->
+<div class="flex items-center px-6 py-8" data-purpose="sidebar-logo-section">
+<div class="bg-white/10 p-2 rounded-lg mr-3"><span class="material-symbols-outlined text-white">shield</span></div>
+<h1 class="text-xl font-bold tracking-tight">Regression Platform</h1>
+</div>
+<!-- END: SidebarHeader -->
+<!-- BEGIN: NavigationLinks -->
+<nav class="flex-grow px-4 space-y-2" data-purpose="nav-links-container">
+<!-- Top Level: Dashboard -->
+<a class="flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-regress-hover transition-colors group" href="#"><span class="material-symbols-outlined mr-3">home</span> Dashboard</a>
+<!-- Top Level: Projects (Expanded) -->
+<div class="space-y-1">
+<button class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg hover:bg-regress-hover transition-colors"><span class="flex items-center"><span class="material-symbols-outlined mr-3">folder</span> Projects</span><span class="material-symbols-outlined">expand_less</span></button>
+<!-- Project: O'Reilly (Expanded & Active) -->
+<div class="ml-4 space-y-1">
+<button class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium bg-regress-blue-active rounded-lg transition-colors"><span class="flex items-center"><span class="material-symbols-outlined mr-3">desktop_windows</span> O'Reilly</span><span class="material-symbols-outlined">expand_less</span></button>
+<!-- Nested Items under O'Reilly -->
+<div class="nested-line-container pl-6 space-y-1 pt-1" data-purpose="nested-project-items">
+<!-- Dashboard Item -->
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined mr-3 opacity-70 text-[18px]">dashboard</span> Dashboard</a>
+<!-- APIs Item -->
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined mr-3 opacity-70 text-[18px]">api</span> APIs</a>
+<!-- Request Pool Item -->
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined mr-3 opacity-70 text-[18px]">list_alt</span> Request Pool</a>
+<!-- Runs Item (Highlighted Bright Blue) -->
+<a class="flex items-center px-4 py-2 text-sm font-semibold bg-regress-blue-bright rounded-lg shadow-lg" href="#"><span class="material-symbols-outlined mr-3 text-[18px]">moving</span> Runs</a>
+<!-- Compare Item -->
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined mr-3 opacity-70 text-[18px]">history</span> Compare</a>
+<!-- Reports Item -->
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined mr-3 opacity-70 text-[18px]">assignment</span> Reports</a>
+<!-- Ignore Rules Item -->
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined mr-3 opacity-70 text-[18px]">rule_settings</span> Ignore Rules</a>
+<!-- Configurations Item -->
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined mr-3 opacity-70 text-[18px]">tune</span> Configurations</a>
+</div>
+</div>
+<!-- Collapsed Sections -->
+<div class="mt-2 space-y-1">
+<!-- AutoZone -->
+<button class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg hover:bg-regress-hover transition-colors"><span class="flex items-center"><span class="material-symbols-outlined mr-3">desktop_windows</span> AutoZone</span><span class="material-symbols-outlined">expand_more</span></button>
+<!-- CARiD -->
+<button class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg hover:bg-regress-hover transition-colors"><span class="flex items-center"><span class="material-symbols-outlined mr-3">desktop_windows</span> CARiD</span><span class="material-symbols-outlined">expand_more</span></button>
+<!-- Innova -->
+<button class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg hover:bg-regress-hover transition-colors"><span class="flex items-center"><span class="material-symbols-outlined mr-3">desktop_windows</span> Innova</span><span class="material-symbols-outlined">expand_more</span></button>
+</div>
+</div>
+</nav>
+<!-- END: NavigationLinks -->
+<!-- BEGIN: SidebarFooter -->
+<div class="mt-auto border-t border-slate-800 p-4" data-purpose="sidebar-settings-footer">
+<a class="flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-regress-hover transition-colors group" href="#"><span class="material-symbols-outlined mr-3">settings</span> Settings</a>
+</div>
+<!-- END: SidebarFooter -->
+</aside>
+<!-- END: MainSidebar -->
+</body></html>

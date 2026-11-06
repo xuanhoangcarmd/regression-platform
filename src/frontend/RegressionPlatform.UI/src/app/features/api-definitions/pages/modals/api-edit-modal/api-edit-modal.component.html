@@ -1,0 +1,44 @@
+<app-modal
+  type="update"
+  size="md"
+  [title]="'Edit API (' + displayApiId(api().id) + ')'"
+  confirmLabel="Save API"
+  [confirmDisabled]="form.invalid"
+  [confirmLoading]="loading()"
+  (confirm)="save()"
+  (cancelled)="closed.emit()"
+>
+  <form [formGroup]="form" class="flex flex-col gap-4">
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">API Name <span class="text-error">*</span></span>
+      <app-input
+        formControlName="name"
+        placeholder="API Name"
+        [error]="controlErrorMessage(form.controls.name, 'API Name')"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Method</span>
+      <app-select formControlName="method" [options]="methodOptions" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Endpoint <span class="text-error">*</span></span>
+      <app-input
+        formControlName="endpoint"
+        placeholder="/api/v1/..."
+        [error]="controlErrorMessage(form.controls.endpoint, 'Endpoint')"
+      />
+      <p class="text-body-sm text-secondary">
+        Use <span class="font-code-sm text-on-surface">&#123;parameter_name&#125;</span> for dynamic path parameters
+        — for example: <span class="font-code-sm text-on-surface">/api/v1/dtc/&#123;code&#125;</span>
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span class="text-body-sm font-medium text-on-surface">Status</span>
+      <app-toggle formControlName="isActive" ariaLabel="Status" />
+    </div>
+  </form>
+</app-modal>

@@ -1,0 +1,26 @@
+<div class="space-y-1">
+  <button
+    type="button"
+    (click)="toggled.emit()"
+    class="flex w-full items-center justify-between rounded-lg px-4 py-2 text-body-sm transition-colors"
+    [ngClass]="
+      expanded()
+        ? 'bg-sidebar-active text-sidebar-on font-medium'
+        : 'text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-on'
+    "
+  >
+    <span class="flex items-center gap-3">
+      <mat-icon class="text-[20px]">{{ project().icon }}</mat-icon>
+      {{ project().name }}
+    </span>
+    <mat-icon class="text-[18px]">{{ expanded() ? unfoldMoreIcon : expandMoreIcon }}</mat-icon>
+  </button>
+
+  @if (expanded()) {
+    <div class="ml-4 space-y-1 border-l border-sidebar-line pl-2">
+      @for (link of project().links; track link.label) {
+        <app-sidebar-nav-item [icon]="link.icon" [label]="link.label" [route]="link.route" />
+      }
+    </div>
+  }
+</div>

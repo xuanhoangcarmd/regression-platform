@@ -1,0 +1,81 @@
+<app-modal
+  type="update"
+  size="lg"
+  title="Send Report via Email"
+  confirmLabel="Send Email"
+  [confirmDisabled]="true"
+  (cancelled)="closed.emit()"
+>
+  <div class="flex flex-col gap-4">
+    <!-- Coming-soon notice -->
+    <div class="flex items-center gap-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-body-sm text-amber-800">
+      <mat-icon class="text-[18px]">schedule</mat-icon>
+      Email delivery is coming soon — this is a preview of the compose screen; sending is not enabled yet.
+    </div>
+
+    <!-- Recipients -->
+    <div>
+      <label class="mb-1.5 block text-body-sm font-semibold text-on-surface">Recipients <span class="text-error">*</span></label>
+      <div class="flex flex-wrap items-center gap-1.5 rounded-lg border border-outline-variant px-2 py-1.5">
+        @for (email of recipients(); track email) {
+          <span class="inline-flex items-center gap-1 rounded-full bg-surface-container px-2 py-0.5 text-label-sm font-label-sm text-on-surface">
+            {{ email }}
+            <button type="button" (click)="removeRecipient(email)" aria-label="Remove recipient" class="text-secondary hover:text-on-surface">
+              <mat-icon class="text-[14px]">close</mat-icon>
+            </button>
+          </span>
+        }
+        <input
+          type="email"
+          placeholder="Add more recipients…"
+          class="min-w-[140px] flex-1 bg-transparent px-1 py-0.5 text-body-sm text-on-surface outline-none placeholder:text-secondary"
+          [value]="draftRecipient()"
+          (input)="draftRecipient.set($any($event.target).value)"
+          (keydown.enter)="addRecipient(); $event.preventDefault()"
+        />
+      </div>
+    </div>
+
+    <!-- Subject -->
+    <div>
+      <label class="mb-1.5 block text-body-sm font-semibold text-on-surface">Subject <span class="text-error">*</span></label>
+      <input
+        type="text"
+        [value]="subject()"
+        class="w-full rounded-lg border border-outline-variant px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+      />
+    </div>
+
+    <!-- Message -->
+    <div>
+      <label class="mb-1.5 block text-body-sm font-semibold text-on-surface">Message</label>
+      <textarea
+        rows="9"
+        class="w-full resize-none rounded-lg border border-outline-variant px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+      >{{ message() }}</textarea>
+    </div>
+
+    <!-- Attachments -->
+    <div class="border-t border-outline-variant pt-4">
+      <p class="mb-2 text-body-sm font-semibold text-on-surface">Attachments</p>
+      <div class="flex flex-col gap-2">
+        <label class="flex cursor-pointer items-center gap-2">
+          <input type="checkbox" class="h-4 w-4 accent-primary-container" [checked]="includePdf()" (change)="includePdf.set(!includePdf())" />
+          <span class="text-body-sm text-on-surface">PDF Report</span>
+        </label>
+        <label class="flex cursor-pointer items-center gap-2">
+          <input type="checkbox" class="h-4 w-4 accent-primary-container" [checked]="includeExcel()" (change)="includeExcel.set(!includeExcel())" />
+          <span class="text-body-sm text-on-surface">Excel Report</span>
+        </label>
+        <label class="flex cursor-pointer items-center gap-2">
+          <input type="checkbox" class="h-4 w-4 accent-primary-container" [checked]="includeAiSummary()" (change)="includeAiSummary.set(!includeAiSummary())" />
+          <span class="text-body-sm text-on-surface">Include AI Summary</span>
+        </label>
+        <label class="flex cursor-pointer items-center gap-2">
+          <input type="checkbox" class="h-4 w-4 accent-primary-container" [checked]="includeCompareLink()" (change)="includeCompareLink.set(!includeCompareLink())" />
+          <span class="text-body-sm text-on-surface">Include Compare Link</span>
+        </label>
+      </div>
+    </div>
+  </div>
+</app-modal>

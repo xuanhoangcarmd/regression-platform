@@ -1,0 +1,132 @@
+<!-- Page header -->
+<div class="mb-6">
+  <h1 class="font-headline-md text-headline-md text-on-surface">System Configuration</h1>
+  <p class="mt-1 text-body-sm text-secondary">Manage the Base URL and headers for each environment.</p>
+</div>
+
+<!-- Configuration card -->
+<div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
+  <!-- Card header + environment tabs -->
+  <div class="flex flex-col gap-4 border-b border-outline-variant p-6 sm:flex-row sm:items-center sm:justify-between">
+    <h2 class="font-title-sm text-title-sm text-on-surface">Environment Configurations</h2>
+
+    <div class="inline-flex rounded-lg border border-outline-variant bg-surface-container-low p-1">
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          (click)="selectEnv(tab.key)"
+          [class.bg-primary-container]="activeEnv() === tab.key"
+          [class.text-on-primary]="activeEnv() === tab.key"
+          [class.shadow-sm]="activeEnv() === tab.key"
+          [class.text-secondary]="activeEnv() !== tab.key"
+          class="min-w-[64px] rounded-md px-4 py-1.5 text-label-xs font-label-xs uppercase tracking-wide transition-colors"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Form -->
+  <form [formGroup]="form" class="flex flex-col gap-6 p-6">
+    @if (loading()) {
+      <p class="text-body-sm text-secondary">Loading configuration…</p>
+    }
+
+    <!-- Base URL -->
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Base URL <span class="text-error">*</span></span>
+      <app-input
+        formControlName="baseUrl"
+        placeholder="e.g. https://api.example.com"
+        [error]="controlErrorMessage(form.controls.baseUrl, 'Base URL')"
+      />
+    </div>
+
+    <!-- Header configuration -->
+    <div class="flex flex-col gap-3">
+      <span class="font-title-sm text-title-sm text-on-surface">Header Configuration</span>
+
+      @if (headers.length > 0) {
+        <div class="hidden grid-cols-[1fr_1fr_auto_auto] gap-3 sm:grid">
+          <span class="text-label-xs font-label-xs uppercase text-secondary">Key</span>
+          <span class="text-label-xs font-label-xs uppercase text-secondary">Value</span>
+          <span class="w-[88px] text-center text-label-xs font-label-xs uppercase text-secondary">Secret</span>
+          <span class="w-9"></span>
+        </div>
+      } @else {
+        <p class="text-body-sm text-secondary">No headers yet. Click "Add Header" to add one.</p>
+      }
+
+      <div formArrayName="headers" class="flex flex-col gap-3">
+        @for (header of headers.controls; track $index) {
+          <div [formGroupName]="$index" class="grid grid-cols-[1fr_1fr_auto_auto] items-start gap-3">
+            <app-input
+              formControlName="key"
+              placeholder="e.g. x-API-Key"
+              [error]="controlErrorMessage(header.controls.key, 'Key')"
+            />
+
+            <!-- Value: masked (read-only) for stored secrets, otherwise an editable input. -->
+            @if (isMasked(header)) {
+              <div class="flex items-center gap-2">
+                <span
+                  class="flex h-9 flex-1 items-center rounded-lg border border-outline-variant bg-surface-container px-4 tracking-widest text-secondary"
+                  >••••••••</span
+                >
+                <button
+                  type="button"
+                  (click)="changeSecret(header)"
+                  class="shrink-0 rounded-lg px-2 py-1 text-body-sm font-medium text-primary transition-colors hover:bg-surface-container-low"
+                >
+                  Change
+                </button>
+              </div>
+            } @else {
+              <app-input
+                formControlName="value"
+                placeholder="e.g. en-US"
+                [error]="controlErrorMessage(header.controls.value, 'Value')"
+              />
+            }
+
+            <!-- Secret marker: a toggle while editing; a lock indicator once masked. -->
+            <div class="flex w-[88px] items-center justify-center">
+              @if (isMasked(header)) {
+                <mat-icon class="text-[18px] text-secondary" title="Hidden (secret)">lock</mat-icon>
+              } @else {
+                <app-toggle formControlName="secret" ariaLabel="Mark header as secret" />
+              }
+            </div>
+
+            <button
+              type="button"
+              title="Delete header"
+              (click)="removeHeader($index)"
+              class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-error-container hover:text-error"
+            >
+              <mat-icon class="text-[18px]">{{ deleteIcon }}</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+
+      <div>
+        <app-button variant="ghost" size="sm" [icon]="addIcon" (click)="addHeader()">Add Header</app-button>
+      </div>
+    </div>
+
+    <!-- Footer actions -->
+    <div class="flex items-center justify-end gap-3 border-t border-outline-variant pt-6">
+      @if (errorMessage(); as message) {
+        <span class="mr-auto text-body-sm font-medium text-error">{{ message }}</span>
+      } @else if (saved()) {
+        <span class="mr-auto text-body-sm font-medium text-green-700">
+          Saved configuration for the {{ activeLabel() }} environment.
+        </span>
+      }
+      <app-button variant="secondary" (click)="cancel()">Cancel</app-button>
+      <app-button [disabled]="form.invalid" [loading]="saving()" (click)="save()">Save Configuration</app-button>
+    </div>
+  </form>
+</div>

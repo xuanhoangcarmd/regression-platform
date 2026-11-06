@@ -1,0 +1,111 @@
+<!-- Page header -->
+<div class="mb-3 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+  <div>
+    <h1 class="font-headline-md text-headline-md text-on-surface">Ignore Rules</h1>
+    <p class="mt-1 text-body-sm text-secondary">Configure the fields to ignore during comparison.</p>
+  </div>
+  <app-button [icon]="addIcon" (click)="openAdd()">Add Rule</app-button>
+</div>
+
+<!-- Table -->
+<div
+  class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm"
+>
+  <app-data-table [columns]="columns" [rows]="rules()" [loading]="loading()" emptyMessage="No rules yet.">
+    <ng-template appCell="id" let-row>
+      <span class="text-code-sm font-code-sm font-medium text-primary">{{ displayRuleId(asRule(row).id) }}</span>
+    </ng-template>
+
+    <ng-template appCell="jsonPath" let-row>
+      <div class="flex flex-col gap-1">
+        <span class="text-code-sm font-code-sm text-secondary">{{ asRule(row).jsonPath }}</span>
+        @if (asRule(row).ruleType === 'TrimAfter') {
+          <span
+            class="inline-flex w-fit items-center gap-1 rounded bg-sky-100 px-1.5 py-0.5 text-label-xs font-label-xs font-medium text-sky-700"
+            title="Compares the value only up to the first occurrence of this text."
+          >
+            <mat-icon class="text-[13px] leading-none">content_cut</mat-icon>
+            Cut at "{{ asRule(row).delimiter }}"
+          </span>
+        }
+        @if (asRule(row).ruleType === 'ExtractRoot') {
+          <span
+            class="inline-flex w-fit items-center gap-1 rounded bg-violet-100 px-1.5 py-0.5 text-label-xs font-label-xs font-medium text-violet-700"
+            title="Lifts this subtree to the response root before comparison (envelope unwrap)."
+          >
+            <mat-icon class="text-[13px] leading-none">vertical_align_top</mat-icon>
+            Extract root
+          </span>
+        }
+      </div>
+    </ng-template>
+
+    <ng-template appCell="description" let-row>
+      <span class="text-body-sm text-on-surface">{{ asRule(row).description || '—' }}</span>
+    </ng-template>
+
+    <ng-template appCell="appliesTo" let-row>
+      <span
+        class="block max-w-[220px] truncate text-body-sm text-secondary"
+        [class.italic]="asRule(row).apis.length === 0"
+        [title]="appliesToLabel(asRule(row))"
+        >{{ appliesToLabel(asRule(row)) }}</span
+      >
+    </ng-template>
+
+    <ng-template appCell="enabled" let-row>
+      <app-status-badge
+        [label]="asRule(row).enabled ? 'Active' : 'Inactive'"
+        [tone]="asRule(row).enabled ? 'success' : 'neutral'"
+      />
+    </ng-template>
+
+    <ng-template appCell="actions" let-row>
+      <div class="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          title="Edit"
+          (click)="openEdit(row)"
+          class="text-slate-400 transition-colors hover:text-primary-container"
+        >
+          <mat-icon class="text-[18px]">{{ editIcon }}</mat-icon>
+        </button>
+        <button
+          type="button"
+          title="Delete"
+          (click)="openRemove(row)"
+          class="text-slate-400 transition-colors hover:text-error"
+        >
+          <mat-icon class="text-[18px]">{{ deleteIcon }}</mat-icon>
+        </button>
+      </div>
+    </ng-template>
+  </app-data-table>
+</div>
+
+<!-- Footer note -->
+<div class="mt-6 space-y-1 text-body-sm text-secondary">
+  <p class="font-medium text-on-surface">Note:</p>
+  <p>• Json Path uses the format <span class="text-code-sm font-code-sm">$.property.subproperty</span>,
+    <span class="text-code-sm font-code-sm">$.array[0].property</span>, or
+    <span class="text-code-sm font-code-sm">$.array[*].property</span>
+    (<span class="text-code-sm font-code-sm">[*]</span> ignores that field in every array element).</p>
+  <p>• <span class="font-medium text-on-surface">Ignore field</span> rules drop the field when computing the hash and comparing.</p>
+  <p>• <span class="font-medium text-on-surface">Extract root</span> rules lift the subtree at the path to the response
+    root before comparison (e.g. <span class="text-code-sm font-code-sm">$.data</span>) — useful when one build wraps
+    its response in an envelope and another does not.</p>
+</div>
+
+<!-- Modals -->
+@if (formOpen()) {
+  <app-ignore-rule-form-modal
+    [rule]="editingRule()"
+    [apiOptions]="apiOptions()"
+    [loading]="actionLoading()"
+    (closed)="formOpen.set(false)"
+    (submitted)="onSubmitted($event)"
+  />
+}
+@if (removingRule(); as rule) {
+  <app-ignore-rule-remove-modal [rule]="rule" [loading]="actionLoading()" (closed)="removingRule.set(null)" (confirmed)="onRemoveConfirmed(rule)" />
+}

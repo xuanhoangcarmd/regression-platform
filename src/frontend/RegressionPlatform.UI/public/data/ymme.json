@@ -1,0 +1,37 @@
+{
+  "years": ["2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"],
+  "makes": [
+    {
+      "name": "Honda",
+      "models": [
+        { "name": "Civic", "engines": ["1.5L Turbo", "2.0L"] },
+        { "name": "Accord", "engines": ["1.5L Turbo", "2.0L Hybrid"] },
+        { "name": "CR-V", "engines": ["1.5L Turbo", "2.0L Hybrid"] }
+      ]
+    },
+    {
+      "name": "Toyota",
+      "models": [
+        { "name": "Camry", "engines": ["2.5L", "3.5L V6"] },
+        { "name": "Corolla", "engines": ["1.8L", "2.0L"] },
+        { "name": "RAV4", "engines": ["2.5L"] }
+      ]
+    },
+    {
+      "name": "Nissan",
+      "models": [
+        { "name": "Altima", "engines": ["2.5L", "2.0L VC-Turbo"] },
+        { "name": "Sentra", "engines": ["2.0L"] },
+        { "name": "Rogue", "engines": ["2.5L"] }
+      ]
+    },
+    {
+      "name": "Ford",
+      "models": [
+        { "name": "F-150", "engines": ["3.5L EcoBoost V6", "5.0L V8"] },
+        { "name": "Escape", "engines": ["1.5L EcoBoost", "2.0L EcoBoost"] },
+        { "name": "Explorer", "engines": ["2.3L EcoBoost", "3.0L V6"] }
+      ]
+    }
+  ]
+}

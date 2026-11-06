@@ -1,0 +1,14 @@
+<app-modal
+  type="remove"
+  size="sm"
+  title="Delete API"
+  confirmLabel="Delete API"
+  [confirmLoading]="loading()"
+  (confirm)="confirmed.emit()"
+  (cancelled)="closed.emit()"
+>
+  <p class="text-body-sm leading-relaxed text-on-surface">
+    Are you sure you want to delete the API "{{ api().name }}" ({{ displayApiId(api().id) }})? This action cannot be
+    undone.
+  </p>
+</app-modal>

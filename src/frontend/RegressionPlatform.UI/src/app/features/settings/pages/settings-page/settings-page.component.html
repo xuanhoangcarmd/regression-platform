@@ -1,0 +1,46 @@
+<!-- Page header -->
+<div class="mb-6">
+  <h1 class="font-headline-md text-headline-md text-on-surface">Settings</h1>
+  <p class="mt-1 text-body-sm text-secondary">Manage your preferences for this device.</p>
+</div>
+
+<!-- Appearance -->
+<section class="max-w-2xl rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
+  <div class="mb-1 flex items-center gap-2">
+    <mat-icon class="text-[20px] text-secondary">palette</mat-icon>
+    <h2 class="font-title-sm text-title-sm text-on-surface">Appearance</h2>
+  </div>
+  <p class="mb-4 text-body-sm text-secondary">
+    Choose how the interface looks. This preference is saved on this device.
+  </p>
+
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    @for (option of themeOptions; track option.mode) {
+      <button
+        type="button"
+        (click)="selectTheme(option.mode)"
+        [attr.aria-pressed]="theme.mode() === option.mode"
+        class="flex items-center gap-3 rounded-lg border p-4 text-left transition-colors"
+        [class]="
+          theme.mode() === option.mode
+            ? 'border-primary-container bg-surface-container ring-2 ring-primary-container'
+            : 'border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low'
+        "
+      >
+        <span
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+          [class]="theme.mode() === option.mode ? 'bg-primary-container text-white' : 'bg-surface-container text-secondary'"
+        >
+          <mat-icon class="text-[22px]">{{ option.icon }}</mat-icon>
+        </span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-body-md font-medium text-on-surface">{{ option.label }}</span>
+          <span class="block text-body-sm text-secondary">{{ option.hint }}</span>
+        </span>
+        @if (theme.mode() === option.mode) {
+          <mat-icon class="text-[20px] text-primary">check_circle</mat-icon>
+        }
+      </button>
+    }
+  </div>
+</section>

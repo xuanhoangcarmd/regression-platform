@@ -1,0 +1,66 @@
+<header
+  class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-outline-variant bg-surface px-6"
+>
+  <!-- Left: mobile menu + breadcrumb -->
+  <div class="flex items-center gap-4">
+    <button
+      type="button"
+      (click)="menuToggle.emit()"
+      class="-ml-2 rounded-full p-2 text-secondary transition-colors hover:bg-surface-container-low hover:text-primary md:hidden"
+    >
+      <mat-icon>{{ menuIcon }}</mat-icon>
+    </button>
+
+    <nav class="hidden items-center gap-2 text-body-sm text-secondary sm:flex" aria-label="Breadcrumb">
+      @for (crumb of breadcrumbs(); track crumb.label; let first = $first) {
+        @if (!first) {
+          <mat-icon class="text-[16px]">{{ chevronRightIcon }}</mat-icon>
+        }
+        @if (crumb.url) {
+          <a [routerLink]="crumb.url" class="cursor-pointer transition-colors hover:text-primary">{{ crumb.label }}</a>
+        } @else {
+          <span class="font-medium text-primary">{{ crumb.label }}</span>
+        }
+      }
+    </nav>
+  </div>
+
+  <!-- Right: tabs + actions + avatar -->
+  <div class="flex items-center gap-2">
+    <nav class="mr-4 hidden gap-4 md:flex">
+      <a
+        [routerLink]="dashboardRoute"
+        routerLinkActive
+        #dashTab="routerLinkActive"
+        class="border-b-2 pb-1 text-label-xs uppercase transition-colors"
+        [class]="dashTab.isActive ? activeTabClass : inactiveTabClass"
+      >
+        Dashboard
+      </a>
+      <a
+        class="cursor-pointer border-b-2 border-transparent pb-1 text-label-xs uppercase text-secondary transition-colors hover:text-primary"
+      >
+        System Health
+      </a>
+    </nav>
+
+    <button
+      type="button"
+      class="rounded-full p-2 text-secondary transition-colors hover:bg-surface-container-low hover:text-primary"
+    >
+      <mat-icon>{{ notificationsIcon }}</mat-icon>
+    </button>
+    <button
+      type="button"
+      class="rounded-full p-2 text-secondary transition-colors hover:bg-surface-container-low hover:text-primary"
+    >
+      <mat-icon>{{ helpIcon }}</mat-icon>
+    </button>
+
+    <div
+      class="ml-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary-container text-body-sm font-bold text-on-primary-container"
+    >
+      A
+    </div>
+  </div>
+</header>

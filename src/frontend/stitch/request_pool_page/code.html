@@ -1,0 +1,526 @@
+<!DOCTYPE html><html lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Quản lý Request Pool - API Regression</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-primary": "#b7c4ff",
+                      "secondary-container": "#d0e1fb",
+                      "surface-container-highest": "#e2e1ed",
+                      "inverse-surface": "#2e3039",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-container": "#ffc9b7",
+                      "surface-container-low": "#f3f2fe",
+                      "on-primary-fixed": "#001551",
+                      "primary-container": "#1d4ed8",
+                      "tertiary-fixed": "#ffdbcf",
+                      "tertiary-fixed-dim": "#ffb59c",
+                      "surface-container": "#ededf9",
+                      "error": "#ba1a1a",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#f0f0fb",
+                      "secondary": "#505f76",
+                      "tertiary-container": "#a73400",
+                      "tertiary": "#7f2500",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "secondary-fixed": "#d3e4fe",
+                      "on-tertiary-fixed-variant": "#832700",
+                      "on-error": "#ffffff",
+                      "on-primary-fixed-variant": "#0039b5",
+                      "surface-tint": "#2151da",
+                      "error-container": "#ffdad6",
+                      "primary-fixed": "#dce1ff",
+                      "surface-bright": "#faf8ff",
+                      "on-surface": "#1a1b23",
+                      "on-secondary-fixed": "#0b1c30",
+                      "on-tertiary-fixed": "#390c00",
+                      "surface-dim": "#d9d9e5",
+                      "primary-fixed-dim": "#b7c4ff",
+                      "on-primary": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "on-surface-variant": "#434655",
+                      "background": "#faf8ff",
+                      "outline-variant": "#c4c5d7",
+                      "surface": "#faf8ff",
+                      "surface-container-high": "#e8e7f3",
+                      "on-background": "#1a1b23",
+                      "on-secondary-container": "#54647a",
+                      "on-primary-container": "#cad3ff",
+                      "outline": "#747686",
+                      "primary": "#0037b0",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "surface-variant": "#e2e1ed"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "row-height-md": "48px",
+                      "row-height-sm": "36px",
+                      "container-padding": "24px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "code-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "label-xs": [
+                              "Inter"
+                      ],
+                      "title-sm": [
+                              "Hanken Grotesk"
+                      ],
+                      "headline-md": [
+                              "Hanken Grotesk"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Hanken Grotesk"
+                      ]
+              },
+              "fontSize": {
+                      "code-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-xs": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "title-sm": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "30px",
+                              {
+                                      "lineHeight": "38px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[style*="'FILL' 1"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-sm min-h-screen flex antialiased">
+<!-- SideNavBar -->
+<nav class="bg-inverse-surface dark:bg-inverse-surface text-inverse-primary dark:text-inverse-primary docked fixed h-full left-0 w-[240px] z-40 bg-inverse-surface flat no shadows"><div class="flex flex-col h-full py-4 bg-[#0b1c30]">
+  <!-- Header Brand -->
+  <div class="px-6 mb-8 flex items-center gap-3">
+    <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">shield</span>
+    <h1 class="text-title-sm font-bold text-white tracking-tight">Regression Platform</h1>
+  </div>
+  
+  <!-- Navigation Links -->
+  <ul class="flex-1 overflow-y-auto space-y-1 px-2">
+    <li class="">
+      <a class="text-slate-400 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg transition-colors" href="#">
+        <span class="material-symbols-outlined text-[20px]">home</span>
+        <span class="text-body-sm">Dashboard</span>
+      </a>
+    </li>
+    
+    <!-- Projects Section -->
+    <li class="group">
+      <div class="text-slate-400 flex items-center justify-between px-4 py-2 cursor-pointer">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[20px]">folder</span>
+          <span class="text-body-sm">Projects</span>
+        </div>
+        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+      </div>
+      
+      <ul class="mt-1 space-y-1">
+        <!-- O'Reilly Active Project -->
+        <li class="">
+          <div class="bg-[#1D4ED8] text-white flex items-center justify-between px-4 py-2 rounded-lg mx-2">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-[20px]">target</span>
+              <span class="text-body-sm">O'Reilly</span>
+            </div>
+            <span class="material-symbols-outlined text-[18px]">unfold_more</span>
+          </div>
+          
+          <!-- Sub-menu -->
+          <ul class="mt-1 ml-6 space-y-1 pr-2">
+            <li class="">
+              <a class="text-slate-400 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg transition-colors" href="#">
+                <span class="material-symbols-outlined text-[18px]">grid_view</span>
+                <span class="text-body-sm">Dashboard</span>
+              </a>
+            </li>
+            <li class="">
+              <a class="text-slate-400 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg transition-colors" href="#">
+                <span class="material-symbols-outlined text-[18px]">code</span>
+                <span class="text-body-sm">APIs</span>
+              </a>
+            </li>
+            <li class="">
+              <a class="bg-[#1D4ED8] text-white flex items-center gap-3 px-4 py-2 rounded-lg transition-colors" href="#">
+                <span class="material-symbols-outlined text-[18px]">inbox</span>
+                <span class="text-body-sm">Request Pool</span>
+              </a>
+            </li>
+            <li class="">
+              <a class="text-slate-400 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg transition-colors" href="#">
+                <span class="material-symbols-outlined text-[18px]">history</span>
+                <span class="text-body-sm">Runs</span>
+              </a>
+            </li>
+            <li class="">
+              <a class="text-slate-400 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg transition-colors" href="#">
+                <span class="material-symbols-outlined text-[18px]">compare_arrows</span>
+                <span class="text-body-sm">Compare</span>
+              </a>
+            </li>
+            <li class="">
+              <a class="text-slate-400 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg transition-colors" href="#">
+                <span class="material-symbols-outlined text-[18px]">description</span>
+                <span class="text-body-sm">Reports</span>
+              </a>
+            </li>
+            <li class="">
+              <a class="text-slate-400 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg transition-colors" href="#">
+                <span class="material-symbols-outlined text-[18px]">settings</span>
+                <span class="text-body-sm">Ignore Rules</span>
+              </a>
+            </li>
+            <li class="">
+              <a class="text-slate-400 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg transition-colors" href="#">
+                <span class="material-symbols-outlined text-[18px]">assignment</span>
+                <span class="text-body-sm">Configurations</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    
+    <!-- Other Projects -->
+    <li class="">
+      <div class="text-slate-400 flex items-center justify-between px-4 py-2 cursor-pointer hover:text-white">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[20px]">directions_car</span>
+          <span class="text-body-sm">AutoZone</span>
+        </div>
+        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+      </div>
+    </li>
+    <li class="">
+      <div class="text-slate-400 flex items-center justify-between px-4 py-2 cursor-pointer hover:text-white">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[20px]">sell</span>
+          <span class="text-body-sm">CARiD</span>
+        </div>
+        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+      </div>
+    </li>
+    <li class="">
+      <div class="text-slate-400 flex items-center justify-between px-4 py-2 cursor-pointer hover:text-white">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[20px]">check_circle</span>
+          <span class="text-body-sm">Innova</span>
+        </div>
+        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+      </div>
+    </li>
+  </ul>
+  
+  <!-- Bottom Item -->
+  <div class="px-2 mt-auto border-t border-slate-700 pt-4">
+    <a class="text-slate-400 hover:text-white flex items-center gap-3 px-4 py-2 rounded-lg transition-colors" href="#">
+      <span class="material-symbols-outlined text-[20px]">settings</span>
+      <span class="text-body-sm">Settings</span>
+    </a>
+  </div>
+</div></nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col ml-[240px] w-[calc(100%-240px)] min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-container text-primary dark:text-inverse-primary docked sticky top-0 w-full z-30 border-b border-outline-variant flat no shadows flex justify-between items-center h-[64px] px-6">
+<!-- Breadcrumbs / Left Nav -->
+<nav class="flex items-center gap-4">
+<h2 class="text-title-sm font-title-sm text-on-surface">API Regression System</h2>
+<div class="h-4 w-[1px] bg-outline-variant"></div>
+<ul class="flex gap-4">
+<li class="">
+<a class="text-secondary hover:text-primary transition-colors text-body-sm font-body-sm" href="#">Dashboard</a>
+</li>
+<li class="">
+<a class="text-secondary hover:text-primary transition-colors text-body-sm font-body-sm" href="#">System Health</a>
+</li>
+</ul>
+</nav>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4">
+<button aria-label="Notifications" class="text-secondary hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full p-2 scale-95 transition-transform">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button aria-label="Help" class="text-secondary hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full p-2 scale-95 transition-transform">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center overflow-hidden border border-outline-variant cursor-pointer">
+<span class="material-symbols-outlined text-sm">person</span>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 p-container-padding bg-background overflow-x-hidden">
+<!-- Page Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+<div>
+<h1 class="text-headline-md font-headline-md text-on-surface mb-1">Requests</h1>
+<p class="text-body-sm font-body-sm text-secondary">Danh sách request của API</p>
+</div>
+<button class="bg-[#1D4ED8] hover:bg-primary-container/90 text-white text-body-sm font-body-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Thêm Request
+                </button>
+</div>
+<!-- Filters & Search Bar -->
+<div class="bg-white border border-[#E2E8F0] rounded-xl p-4 mb-6 shadow-sm">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+<!-- API Filter Dropdown -->
+<div class="md:col-span-3 relative">
+<label class="sr-only">Lọc theo API</label>
+<select class="w-full appearance-none bg-surface text-on-surface text-body-sm font-body-sm border border-[#CBD5E1] rounded-lg pl-3 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent">
+<option value="">Tất cả API</option>
+<option value="GetMostLikelyFixForVehicle">GetMostLikelyFixForVehicle</option>
+<option value="GetDTCLibraryErrorCode">GetDTCLibraryErrorCode</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+<!-- Search Input -->
+<div class="md:col-span-6 relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">search</span>
+</div>
+<input class="w-full bg-surface text-on-surface text-body-sm font-body-sm border border-[#CBD5E1] rounded-lg pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent" placeholder="Tìm kiếm tiêu đề request..." type="text">
+</div>
+<!-- Status Filter Dropdown -->
+<div class="md:col-span-3 flex items-center justify-end gap-2">
+<span class="text-label-xs font-label-xs text-secondary whitespace-nowrap uppercase">Trạng thái</span>
+<div class="relative w-32">
+<select class="w-full appearance-none bg-surface text-on-surface text-body-sm font-body-sm border border-[#CBD5E1] rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent">
+<option value="">Tất cả</option>
+<option value="active">Active</option>
+<option value="inactive">Inactive</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-secondary">
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Data Table Container -->
+<div class="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm flex flex-col">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-[#F8FAFC] border-b border-[#F1F5F9]">
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase font-bold w-[120px]">Request ID</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase font-bold">API</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase font-bold">Tiêu đề Request</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase font-bold w-[100px]">Method</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase font-bold w-[120px]">Trạng thái</th>
+<th class="px-4 py-3 text-label-xs font-label-xs text-secondary uppercase font-bold w-[100px] text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="text-body-sm font-body-sm divide-y divide-[#F1F5F9]">
+<!-- Row 1 -->
+<tr class="hover:bg-[#F1F5F9] transition-colors group h-row-height-md">
+<td class="px-4 py-2 font-code-sm text-primary">REQ-00001</td>
+<td class="px-4 py-2 text-on-surface">GetMostLikelyFixForVehicle</td>
+<td class="px-4 py-2 text-on-surface truncate max-w-[200px]" title="Honda Civic 2018 1.8L">Honda Civic 2018 1.8L</td>
+<td class="px-4 py-2 text-secondary">POST</td>
+<td class="px-4 py-2">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+</td>
+<td class="px-4 py-2 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button aria-label="Edit" class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button aria-label="Delete" class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-[#F1F5F9] transition-colors group h-row-height-md">
+<td class="px-4 py-2 font-code-sm text-primary">REQ-00002</td>
+<td class="px-4 py-2 text-on-surface">GetMostLikelyFixForVehicle</td>
+<td class="px-4 py-2 text-on-surface truncate max-w-[200px]" title="Toyota Camry 2019 2.5L">Toyota Camry 2019 2.5L</td>
+<td class="px-4 py-2 text-secondary">POST</td>
+<td class="px-4 py-2">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+</td>
+<td class="px-4 py-2 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button aria-label="Edit" class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button aria-label="Delete" class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-[#F1F5F9] transition-colors group h-row-height-md">
+<td class="px-4 py-2 font-code-sm text-primary">REQ-00003</td>
+<td class="px-4 py-2 text-on-surface">GetMostLikelyFixForVehicle</td>
+<td class="px-4 py-2 text-on-surface truncate max-w-[200px]" title="Ford Ranger 2020 2.0L">Ford Ranger 2020 2.0L</td>
+<td class="px-4 py-2 text-secondary">POST</td>
+<td class="px-4 py-2">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+</td>
+<td class="px-4 py-2 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button aria-label="Edit" class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button aria-label="Delete" class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-[#F1F5F9] transition-colors group h-row-height-md">
+<td class="px-4 py-2 font-code-sm text-primary">REQ-00004</td>
+<td class="px-4 py-2 text-on-surface">GetDTCLibraryErrorCode</td>
+<td class="px-4 py-2 text-on-surface truncate max-w-[200px]" title="P0300">P0300</td>
+<td class="px-4 py-2 text-secondary">GET</td>
+<td class="px-4 py-2">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+</td>
+<td class="px-4 py-2 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button aria-label="Edit" class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button aria-label="Delete" class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-[#F1F5F9] transition-colors group h-row-height-md">
+<td class="px-4 py-2 font-code-sm text-primary">REQ-00005</td>
+<td class="px-4 py-2 text-on-surface">GetDTCLibraryErrorCode</td>
+<td class="px-4 py-2 text-on-surface truncate max-w-[200px]" title="P0420">P0420</td>
+<td class="px-4 py-2 text-secondary">GET</td>
+<td class="px-4 py-2">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+</td>
+<td class="px-4 py-2 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button aria-label="Edit" class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button aria-label="Delete" class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="border-t border-[#F1F5F9] p-4 flex items-center justify-between bg-white text-body-sm font-body-sm text-secondary">
+<div class="">
+                        Hiển thị 1-5 của 9,850 request
+                    </div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded flex items-center justify-center bg-[#1D4ED8] text-white hover:bg-primary-container transition-colors">1</button>
+<button class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low transition-colors text-on-surface">2</button>
+<button class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low transition-colors text-on-surface">3</button>
+<span class="px-1 text-outline-variant">...</span>
+<button class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low transition-colors text-on-surface">1970</button>
+<button class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low transition-colors text-secondary">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+
+</body></html>

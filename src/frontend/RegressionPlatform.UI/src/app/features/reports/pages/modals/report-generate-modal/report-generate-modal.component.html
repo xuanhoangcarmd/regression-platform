@@ -1,0 +1,35 @@
+<app-modal
+  type="update"
+  size="lg"
+  title="Generate Report"
+  [confirmLabel]="generating() ? 'Generating…' : 'Generate'"
+  [confirmDisabled]="isInvalid()"
+  [confirmLoading]="generating()"
+  (confirm)="save()"
+  (cancelled)="closed.emit()"
+>
+  <div class="flex flex-col gap-4">
+    <p class="-mt-1 text-body-sm text-secondary">
+      Pick a completed comparison. One report per compare — regenerating refreshes it in place.
+    </p>
+
+    <div>
+      <span class="mb-1.5 block text-body-sm font-medium text-on-surface">Compare</span>
+      <app-select [formControl]="compareControl" [options]="compareOptions()" [fullWidth]="true" />
+    </div>
+
+    @if (selectedCompare(); as compare) {
+      <div class="flex flex-col gap-1 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5 text-body-sm">
+        <div class="flex items-center gap-2">
+          <span class="font-medium text-on-surface">{{ compare.runATitle }}</span>
+          <span class="text-secondary">→</span>
+          <span class="font-medium text-on-surface">{{ compare.runBTitle }}</span>
+        </div>
+        <span class="text-label-xs font-label-xs text-secondary">
+          {{ compare.totalRequest ?? 0 }} requests · {{ compare.changedCount ?? 0 }} changed ·
+          {{ compare.addedCount ?? 0 }} added · {{ compare.removedCount ?? 0 }} removed
+        </span>
+      </div>
+    }
+  </div>
+</app-modal>

@@ -1,0 +1,117 @@
+<!-- Page header -->
+<div class="mb-3 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+  <div>
+    <h1 class="font-headline-md text-headline-md text-on-surface">Datasets</h1>
+    <p class="mt-1 text-body-sm text-secondary">Manage your test data sets</p>
+  </div>
+  <app-button [icon]="addIcon" (click)="openAdd()">New Dataset</app-button>
+</div>
+
+<!-- Card -->
+<div
+  class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm"
+>
+  <!-- Toolbar -->
+  <div class="flex flex-col gap-4 border-b border-outline-variant p-4 md:flex-row md:items-center">
+    <div class="flex-1">
+      <app-input [formControl]="searchControl" [icon]="searchIcon" placeholder="Search dataset..." />
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="whitespace-nowrap text-body-sm text-secondary">Status</span>
+      <app-select [formControl]="statusControl" [options]="statusOptions" />
+    </div>
+  </div>
+
+  <app-data-table [columns]="columns" [rows]="datasets()" [loading]="loading() || editLoading()" emptyMessage="No datasets found.">
+    <ng-template appCell="pinned" let-row>
+      <button
+        type="button"
+        [title]="isPinned(row) ? 'Unpin' : 'Pin to top'"
+        [attr.aria-pressed]="isPinned(row)"
+        (click)="togglePin(row)"
+        class="flex items-center justify-center transition-colors"
+        [class]="isPinned(row) ? 'text-amber-400' : 'text-slate-300 hover:text-amber-400'"
+      >
+        <mat-icon class="text-[20px]">{{ pinIcon }}</mat-icon>
+      </button>
+    </ng-template>
+
+    <ng-template appCell="name" let-row>
+      <button
+        type="button"
+        (click)="openRequests(row)"
+        class="block max-w-[360px] truncate text-left text-body-sm font-medium text-primary transition-colors hover:underline"
+        [title]="asDataset(row).name"
+      >
+        {{ asDataset(row).name }}
+      </button>
+      @if (asDataset(row).description) {
+        <span class="block max-w-[360px] truncate text-body-sm text-secondary" [title]="asDataset(row).description ?? ''">
+          {{ asDataset(row).description }}
+        </span>
+      }
+    </ng-template>
+
+    <ng-template appCell="requestCount" let-row>
+      <span class="text-body-sm text-on-surface">{{ asDataset(row).requestCount }}</span>
+    </ng-template>
+
+    <ng-template appCell="apiCount" let-row>
+      <span class="text-body-sm text-on-surface">{{ asDataset(row).apiCount }}</span>
+    </ng-template>
+
+    <ng-template appCell="isActive" let-row>
+      <app-status-badge
+        [label]="asDataset(row).isActive ? 'Active' : 'Inactive'"
+        [tone]="asDataset(row).isActive ? 'success' : 'neutral'"
+      />
+    </ng-template>
+
+    <ng-template appCell="actions" let-row>
+      <div class="flex items-center justify-center gap-2">
+        <button
+          type="button"
+          title="Open requests"
+          (click)="openRequests(row)"
+          class="text-slate-400 transition-colors hover:text-primary-container"
+        >
+          <mat-icon class="text-[18px]">{{ viewIcon }}</mat-icon>
+        </button>
+        <button
+          type="button"
+          title="Edit"
+          (click)="openEdit(row)"
+          class="text-slate-400 transition-colors hover:text-primary-container"
+        >
+          <mat-icon class="text-[18px]">{{ editIcon }}</mat-icon>
+        </button>
+        <button
+          type="button"
+          title="Delete"
+          (click)="openRemove(row)"
+          class="text-slate-400 transition-colors hover:text-error"
+        >
+          <mat-icon class="text-[18px]">{{ deleteIcon }}</mat-icon>
+        </button>
+      </div>
+    </ng-template>
+  </app-data-table>
+</div>
+
+<!-- Modals -->
+@if (formOpen()) {
+  <app-dataset-form-modal
+    [dataset]="editingDataset()"
+    [loading]="actionLoading()"
+    (closed)="formOpen.set(false)"
+    (submitted)="onSubmitted($event)"
+  />
+}
+@if (removingDataset(); as dataset) {
+  <app-dataset-remove-modal
+    [dataset]="dataset"
+    [loading]="actionLoading()"
+    (closed)="removingDataset.set(null)"
+    (confirmed)="onRemoveConfirmed(dataset)"
+  />
+}

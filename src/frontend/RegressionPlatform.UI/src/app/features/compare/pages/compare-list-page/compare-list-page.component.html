@@ -1,0 +1,202 @@
+<!-- Page header -->
+<div class="mb-3 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+  <div>
+    <h1 class="font-headline-md text-headline-md text-on-surface">Compare History</h1>
+    <p class="mt-1 text-body-sm text-secondary">Comparisons of two runs for the project.</p>
+  </div>
+  <app-button [icon]="addIcon" (click)="createOpen.set(true)">New Compare</app-button>
+</div>
+
+<!-- Card -->
+<div
+  class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm"
+>
+  <!-- Toolbar -->
+  <div class="flex flex-col gap-4 border-b border-outline-variant p-4 md:flex-row md:items-center">
+    <div class="flex-1">
+      <app-input [formControl]="searchControl" [icon]="searchIcon" placeholder="Search by run name..." />
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="whitespace-nowrap text-body-sm text-secondary">Status</span>
+      <app-select [formControl]="statusControl" [options]="statusOptions" />
+    </div>
+  </div>
+
+  <app-data-table [columns]="columns" [rows]="compares()" [loading]="loading()" emptyMessage="No compares yet.">
+    <ng-template appCell="id" let-row>
+      <span class="text-code-sm font-code-sm font-medium text-primary">{{ displayCompareId(asCompare(row).id) }}</span>
+    </ng-template>
+
+    <ng-template appCell="runs" let-row>
+      <div class="flex items-center gap-2.5 text-body-sm">
+        <!-- A: baseline run -->
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <span
+            class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-label-xs font-label-xs font-semibold text-secondary"
+            title="Run A (baseline)"
+          >
+            A
+          </span>
+          <span class="truncate text-on-surface" [title]="asCompare(row).runATitle">{{ asCompare(row).runATitle }}</span>
+        </div>
+
+        <!-- Direction A → B -->
+        <mat-icon class="shrink-0 text-[16px] text-secondary">{{ arrowIcon }}</mat-icon>
+
+        <!-- B: new run -->
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <span
+            class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-container text-label-xs font-label-xs font-semibold text-on-primary-container"
+            title="Run B (new)"
+          >
+            B
+          </span>
+          <span class="truncate text-on-surface" [title]="asCompare(row).runBTitle">{{ asCompare(row).runBTitle }}</span>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template appCell="status" let-row>
+      <app-status-badge [label]="asCompare(row).status" [tone]="statusTone(asCompare(row).status)" />
+    </ng-template>
+
+    <ng-template appCell="result" let-row>
+      @if (asCompare(row).status === 'Running') {
+        <div class="flex min-w-[180px] flex-col gap-1">
+          <span class="text-label-xs font-label-xs text-primary">Progress: {{ asCompare(row).progress }}%</span>
+          <div class="flex h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high">
+            <div class="bg-blue-600" [style.width.%]="asCompare(row).progress"></div>
+          </div>
+        </div>
+      } @else if (asCompare(row).status === 'Completed') {
+        @if (compareMetrics(asCompare(row)); as m) {
+          <div class="group flex min-w-[180px] cursor-help flex-col gap-1" [title]="metricsTooltip(m)">
+            <div class="flex flex-wrap gap-x-2 text-label-xs font-label-xs">
+              @if (m.unchangedPercent > 0) {
+                <span class="text-slate-500 transition-colors group-hover:font-medium" [title]="'Unchanged: ' + m.unchangedPercent + '%'">{{ m.unchangedPercent }}%@if (showCompareLabels(m)) {&nbsp;Unchanged}</span>
+              }
+              @if (m.changedPercent > 0) {
+                <span class="text-amber-600 transition-colors group-hover:font-medium" [title]="'Changed: ' + m.changedPercent + '%'">{{ m.changedPercent }}%@if (showCompareLabels(m)) {&nbsp;Changed}</span>
+              }
+              @if (m.addedPercent > 0) {
+                <span class="text-green-600 transition-colors group-hover:font-medium" [title]="'Added: ' + m.addedPercent + '%'">{{ m.addedPercent }}%@if (showCompareLabels(m)) {&nbsp;Added}</span>
+              }
+              @if (m.removedPercent > 0) {
+                <span class="text-red-700 transition-colors group-hover:font-medium" [title]="'Removed: ' + m.removedPercent + '%'">{{ m.removedPercent }}%@if (showCompareLabels(m)) {&nbsp;Removed}</span>
+              }
+              @if (m.failedPercent > 0) {
+                <span class="text-red-800 transition-colors group-hover:font-medium" [title]="'Failed: ' + m.failedPercent + '%'">{{ m.failedPercent }}%@if (showCompareLabels(m)) {&nbsp;Failed}</span>
+              }
+            </div>
+            <div
+              class="flex w-full overflow-hidden rounded-full bg-surface-container-high transition-all h-1.5 group-hover:h-2.5"
+            >
+              <div class="bg-slate-400 transition-all hover:opacity-80" [style.width.%]="m.unchangedPercent" [title]="'Unchanged: ' + m.unchangedPercent + '%'"></div>
+              <div class="bg-amber-500 transition-all hover:opacity-80" [style.width.%]="m.changedPercent" [title]="'Changed: ' + m.changedPercent + '%'"></div>
+              <div class="bg-green-500 transition-all hover:opacity-80" [style.width.%]="m.addedPercent" [title]="'Added: ' + m.addedPercent + '%'"></div>
+              <div class="bg-red-500 transition-all hover:opacity-80" [style.width.%]="m.removedPercent" [title]="'Removed: ' + m.removedPercent + '%'"></div>
+              <div class="bg-red-700 transition-all hover:opacity-80" [style.width.%]="m.failedPercent" [title]="'Failed: ' + m.failedPercent + '%'"></div>
+            </div>
+          </div>
+        } @else {
+          <span class="text-body-sm text-secondary">No requests</span>
+        }
+      } @else {
+        <span class="text-body-sm text-secondary">—</span>
+      }
+    </ng-template>
+
+    <ng-template appCell="totalRequest" let-row>
+      <span class="block text-right text-body-sm text-on-surface">
+        {{ asCompare(row).totalRequest !== null ? (asCompare(row).totalRequest | number) : '—' }}
+      </span>
+    </ng-template>
+
+    <ng-template appCell="createdDate" let-row>
+      <span class="text-body-sm text-secondary">{{ asCompare(row).createdDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+    </ng-template>
+
+    <ng-template appCell="actions" let-row>
+      <div class="flex items-center justify-center gap-2">
+        @if (asCompare(row).status === 'Pending') {
+          @if (startingId() === asCompare(row).id) {
+            <mat-icon class="animate-spin text-[18px] text-primary">progress_activity</mat-icon>
+          } @else {
+            <button
+              type="button"
+              title="Start compare"
+              (click)="startCompare(row)"
+              class="text-slate-400 transition-colors hover:text-green-600"
+            >
+              <mat-icon class="text-[18px]">{{ startIcon }}</mat-icon>
+            </button>
+          }
+        } @else if (asCompare(row).status === 'Running') {
+          @if (stoppingId() === asCompare(row).id) {
+            <mat-icon class="animate-spin text-[18px] text-primary">progress_activity</mat-icon>
+          } @else {
+            <button
+              type="button"
+              title="Stop compare"
+              (click)="stopCompare(row)"
+              class="text-slate-400 transition-colors hover:text-error"
+            >
+              <mat-icon class="text-[18px]">{{ stopIcon }}</mat-icon>
+            </button>
+          }
+        } @else {
+          <button
+            type="button"
+            title="View details"
+            (click)="openDetail(row)"
+            class="text-slate-400 transition-colors hover:text-primary-container"
+          >
+            <mat-icon class="text-[18px]">{{ viewIcon }}</mat-icon>
+          </button>
+        }
+        @if (asCompare(row).status !== 'Running' && !asCompare(row).hasReport) {
+          <button
+            type="button"
+            title="Delete compare (removes all its data)"
+            (click)="askDelete(row)"
+            class="text-slate-400 transition-colors hover:text-error"
+          >
+            <mat-icon class="text-[18px]">{{ deleteIcon }}</mat-icon>
+          </button>
+        }
+      </div>
+    </ng-template>
+  </app-data-table>
+
+  <app-paginator
+    [pageNumber]="pageNumber()"
+    [pageSize]="pageSize()"
+    [totalCount]="totalCount()"
+    (pageChange)="onPage($event)"
+  />
+</div>
+
+@if (createOpen()) {
+  <app-compare-create-modal [loading]="createLoading()" (closed)="createOpen.set(false)" (submitted)="onCreated($event)" />
+}
+
+@if (compareToDelete(); as compare) {
+  <app-modal
+    type="remove"
+    title="Delete compare?"
+    confirmLabel="Delete"
+    [confirmLoading]="deleting()"
+    (confirm)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  >
+    <p class="text-body-sm text-on-surface">
+      Delete <span class="font-medium">{{ displayCompareId(compare.id) }}</span>
+      (<span class="font-medium">{{ compare.runATitle }}</span> →
+      <span class="font-medium">{{ compare.runBTitle }}</span>)?
+    </p>
+    <p class="mt-2 text-body-sm text-secondary">
+      This permanently removes the compare and <span class="font-medium text-error">all its result data</span>.
+      This cannot be undone.
+    </p>
+  </app-modal>
+}

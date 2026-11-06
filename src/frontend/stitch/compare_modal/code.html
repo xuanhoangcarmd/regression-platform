@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>So Sánh 2 Run - API Regression Test</title>
+<!-- Load Tailwind CSS v3 with forms and container-queries plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style data-purpose="custom-layout-styles">
+    /* Custom styles to match the UI aesthetic in the screenshot */
+    body {
+      background-color: #f3f4f6;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    .card-shadow {
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+    .arrow-icon {
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body class="p-6">
+<!-- BEGIN: ComparisonSetupScreen -->
+<main class="max-w-6xl mx-auto" data-purpose="comparison-setup-container">
+<!-- BEGIN: SectionHeader -->
+<div class="flex items-center gap-3 mb-4" data-purpose="section-header">
+<div class="bg-blue-600 text-white w-8 h-8 flex items-center justify-center rounded-sm font-bold text-lg">6</div>
+<h1 class="text-xl font-bold text-slate-800 uppercase tracking-tight">So Sánh 2 Run</h1>
+</div>
+<!-- END: SectionHeader -->
+<!-- BEGIN: ComparisonCard -->
+<section class="bg-white rounded-lg border border-slate-200 card-shadow overflow-hidden" data-purpose="main-content-card">
+<!-- Card Header -->
+<div class="px-6 py-4 border-b border-slate-100">
+<h2 class="text-lg font-semibold text-slate-800">So sánh 2 Run (Sprint)</h2>
+<p class="text-sm text-slate-500">Chọn 2 run để so sánh kết quả</p>
+</div>
+<div class="p-8">
+<!-- BEGIN: RunSelectionArea -->
+<div class="flex flex-col md:flex-row items-center justify-between gap-8 mb-10" data-purpose="selection-controls">
+<!-- Run A Selection -->
+<div class="flex-1 w-full" data-purpose="run-a-selection">
+<label class="block text-sm font-semibold text-slate-700 mb-2">Run thứ nhất (Run A)</label>
+<div class="relative">
+<select class="w-full bg-slate-50 border border-slate-300 rounded-md py-2.5 px-4 text-sm focus:ring-blue-500 focus:border-blue-500 appearance-none">
+<option value="RUN-27">RUN-27 - Sprint 27 - 2024-06-13</option>
+<option value="RUN-26">RUN-26 - Sprint 26 - 2024-06-06</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+<svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+</div>
+<div class="mt-3 space-y-1">
+<div class="text-xs text-slate-500">Ngày tạo: <span class="text-slate-700">13/06/2024 10:20</span></div>
+<div class="text-xs text-slate-500">Requests: <span class="text-slate-700 font-medium">9,620</span></div>
+</div>
+</div>
+<!-- Comparison Arrow -->
+<div class="flex items-center justify-center px-4" data-purpose="comparison-arrow">
+<svg class="w-8 h-8 arrow-icon" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M17 8l4 4m0 0l-4 4m4-4H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<!-- Run B Selection -->
+<div class="flex-1 w-full" data-purpose="run-b-selection">
+<label class="block text-sm font-semibold text-slate-700 mb-2">Run thứ hai (Run B)</label>
+<div class="relative">
+<select class="w-full bg-slate-50 border border-slate-300 rounded-md py-2.5 px-4 text-sm focus:ring-blue-500 focus:border-blue-500 appearance-none">
+<option value="RUN-28">RUN-28 - Sprint 28 - 2024-06-20</option>
+<option value="RUN-29">RUN-29 - Sprint 29 - 2024-06-27</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+<svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+</div>
+<div class="mt-3 space-y-1">
+<div class="text-xs text-slate-500">Ngày tạo: <span class="text-slate-700">20/06/2024 10:30</span></div>
+<div class="text-xs text-slate-500">Requests: <span class="text-slate-700 font-medium">9,850</span></div>
+</div>
+</div>
+</div>
+<!-- END: RunSelectionArea -->
+<!-- BEGIN: OptionsArea -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-100" data-purpose="comparison-options">
+<!-- Scope Selection -->
+<div>
+<h3 class="text-sm font-semibold text-slate-700 mb-4">Phạm vi so sánh</h3>
+<div class="space-y-3">
+<label class="flex items-center gap-3 cursor-pointer">
+<input checked="" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" name="scope" type="radio" value="all"/>
+<span class="text-sm text-slate-700">So sánh tất cả request</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer">
+<input class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" name="scope" type="radio" value="specific"/>
+<span class="text-sm text-slate-700">Chọn API cụ thể</span>
+</label>
+</div>
+</div>
+<!-- Extra Settings -->
+<div>
+<h3 class="text-sm font-semibold text-slate-700 mb-4">Tùy chọn</h3>
+<div class="space-y-3">
+<label class="flex items-center gap-3 cursor-pointer">
+<input checked="" class="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" type="checkbox"/>
+<span class="text-sm text-slate-700">Bỏ qua thứ tự trong Array (nếu có cấu hình)</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer">
+<input checked="" class="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" type="checkbox"/>
+<span class="text-sm text-slate-700">Sử dụng Ignore Rules</span>
+</label>
+</div>
+</div>
+</div>
+<!-- END: OptionsArea -->
+<!-- BEGIN: ActionButton -->
+<div class="mt-10 flex justify-end" data-purpose="form-actions">
+<button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-8 rounded-md shadow-sm transition-colors text-sm" type="button">
+            Bắt đầu so sánh
+          </button>
+</div>
+<!-- END: ActionButton -->
+</div>
+</section>
+<!-- END: ComparisonCard -->
+</main>
+<!-- END: ComparisonSetupScreen -->
+</body></html>

@@ -1,0 +1,407 @@
+@if (loading()) {
+  <!-- Skeleton mirroring the page layout: header · metadata chips · tabs · summary sections -->
+  <div class="animate-pulse">
+    <!-- Header -->
+    <div class="mb-6">
+      <div class="flex items-center gap-3">
+        <div class="h-8 w-40 rounded-lg bg-surface-container-high"></div>
+        <div class="h-6 w-24 rounded-full bg-surface-container-high"></div>
+      </div>
+      <div class="mt-2 h-4 w-72 rounded bg-surface-container-high"></div>
+
+      <!-- Metadata chips -->
+      <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        @for (i of skeletonChips; track i) {
+          <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
+            <div class="h-9 w-9 shrink-0 rounded-md bg-surface-container-high"></div>
+            <div class="min-w-0 flex-1">
+              <div class="h-3 w-16 rounded bg-surface-container-high"></div>
+              <div class="mt-1.5 h-4 w-20 rounded bg-surface-container-high"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-6 flex gap-4 border-b border-outline-variant pb-3">
+      @for (i of skeletonTabs; track i) {
+        <div class="h-5 w-20 rounded bg-surface-container-high"></div>
+      }
+    </div>
+
+    <!-- Summary sections -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <!-- API Statistics -->
+      <div class="lg:col-span-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
+        <div class="h-5 w-32 rounded bg-surface-container-high"></div>
+        <div class="mt-5 space-y-3">
+          @for (i of skeletonRows; track i) {
+            <div class="h-4 w-full rounded bg-surface-container-high"></div>
+          }
+        </div>
+      </div>
+      <!-- Distribution + Run info -->
+      <div class="flex flex-col gap-6">
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
+          <div class="h-5 w-36 rounded bg-surface-container-high"></div>
+          <div class="mt-4 flex items-center gap-5">
+            <div class="h-28 w-28 shrink-0 rounded-full bg-surface-container-high"></div>
+            <div class="flex-1 space-y-2">
+              @for (i of skeletonRows; track i) {
+                <div class="h-3 w-full rounded bg-surface-container-high"></div>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
+          <div class="h-5 w-28 rounded bg-surface-container-high"></div>
+          <div class="mt-4 space-y-2.5">
+            @for (i of skeletonRows; track i) {
+              <div class="h-3.5 w-full rounded bg-surface-container-high"></div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else if (errorMessage()) {
+  <p class="text-body-sm text-error">{{ errorMessage() }}</p>
+} @else if (detail()) {
+  @if (detail(); as run) {
+  <!-- Header -->
+  <div class="mb-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3">
+        <h1 class="font-headline-md text-headline-md text-on-surface">{{ displayRunId(run.id) }}</h1>
+        <app-status-badge [label]="run.status" [tone]="statusTone(run.status)" />
+      </div>
+      @if (run.status === 'Completed' || run.status === 'Failed') {
+        <a
+          [routerLink]="['expected']"
+          class="inline-flex items-center gap-1.5 self-start rounded-lg border border-outline-variant px-3 py-1.5 text-body-sm font-medium text-on-surface transition-colors hover:border-primary hover:text-primary"
+          title="Edit what this run's responses should be (used by compares in Expected mode)"
+        >
+          <mat-icon class="text-[18px]">edit_note</mat-icon> Expected Responses
+        </a>
+      }
+    </div>
+    <p class="mt-1 text-body-sm text-secondary">{{ run.title }}{{ run.description ? ' · ' + run.description : '' }}</p>
+
+    <!-- Metadata chips -->
+    <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-container text-secondary">
+          <mat-icon class="text-[20px]">{{ metaIcons.environment }}</mat-icon>
+        </span>
+        <div class="min-w-0">
+          <p class="text-label-xs font-label-xs uppercase text-secondary">Environment</p>
+          <p class="truncate text-title-sm font-title-sm text-on-surface">{{ run.environment }}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-container text-secondary">
+          <mat-icon class="text-[20px]">{{ metaIcons.runType }}</mat-icon>
+        </span>
+        <div class="min-w-0">
+          <p class="text-label-xs font-label-xs uppercase text-secondary">Run Type</p>
+          <p class="truncate text-title-sm font-title-sm text-on-surface">{{ run.runType }}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-container text-secondary">
+          <mat-icon class="text-[20px]">{{ metaIcons.start }}</mat-icon>
+        </span>
+        <div class="min-w-0">
+          <p class="text-label-xs font-label-xs uppercase text-secondary">Started</p>
+          <p class="truncate text-title-sm font-title-sm text-on-surface">
+            {{ run.startTime ? (run.startTime | date: 'dd/MM/yyyy HH:mm') : '—' }}
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-container text-secondary">
+          <mat-icon class="text-[20px]">{{ metaIcons.duration }}</mat-icon>
+        </span>
+        <div class="min-w-0">
+          <p class="text-label-xs font-label-xs uppercase text-secondary">Duration</p>
+          <p class="truncate text-title-sm font-title-sm text-on-surface">{{ formatDuration(run.durationMs) }}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-container text-secondary">
+          <mat-icon class="text-[20px]">{{ metaIcons.api }}</mat-icon>
+        </span>
+        <div class="min-w-0">
+          <p class="text-label-xs font-label-xs uppercase text-secondary">Total APIs</p>
+          <p class="truncate text-title-sm font-title-sm text-on-surface">{{ run.apiCount }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="mb-6 flex gap-1 border-b border-outline-variant">
+    @for (tab of tabs; track tab.key) {
+      <button
+        type="button"
+        (click)="activeTab.set(tab.key)"
+        [class.border-primary]="activeTab() === tab.key"
+        [class.bg-surface-container]="activeTab() === tab.key"
+        [class.font-semibold]="activeTab() === tab.key"
+        [class.text-on-surface]="activeTab() === tab.key"
+        [class.border-transparent]="activeTab() !== tab.key"
+        [class.text-secondary]="activeTab() !== tab.key"
+        class="-mb-px rounded-t-lg border-b-2 px-4 py-2 text-body-sm font-medium transition-colors hover:text-on-surface"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  @if (activeTab() === 'summary') {
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <!-- API Statistics -->
+      <div
+        class="lg:col-span-2 flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm"
+      >
+        <div class="border-b border-outline-variant p-4">
+          <h2 class="font-title-sm text-title-sm text-on-surface">API Statistics</h2>
+          <p class="text-body-sm text-secondary">Execution statistics by API.</p>
+        </div>
+        <app-data-table [columns]="columns" [rows]="run.apiStatistics" emptyMessage="No execution data yet.">
+          <ng-template appCell="apiName" let-row>
+            <span class="text-body-sm font-medium text-on-surface">{{ asStatistic(row).apiName }}</span>
+          </ng-template>
+          <ng-template appCell="requestCount" let-row>
+            <span class="block text-right text-body-sm text-on-surface">{{ asStatistic(row).requestCount | number }}</span>
+          </ng-template>
+          <ng-template appCell="passedCount" let-row>
+            <span class="block text-right text-body-sm font-medium text-green-600">{{ asStatistic(row).passedCount | number }}</span>
+          </ng-template>
+          <ng-template appCell="warningCount" let-row>
+            <span class="block text-right text-body-sm font-medium text-yellow-600">{{ asStatistic(row).warningCount | number }}</span>
+          </ng-template>
+          <ng-template appCell="failedCount" let-row>
+            <span class="block text-right text-body-sm font-medium text-red-700">{{ asStatistic(row).failedCount | number }}</span>
+          </ng-template>
+          <ng-template appCell="successRate" let-row>
+            <span class="block text-right text-body-sm font-medium text-on-surface">{{ successRate(asStatistic(row)) }}</span>
+          </ng-template>
+          <ng-template appCell="avgResponseTimeMs" let-row>
+            <span class="block text-right text-code-sm font-code-sm text-secondary">{{ formatMs(asStatistic(row).avgResponseTimeMs) }}</span>
+          </ng-template>
+        </app-data-table>
+      </div>
+
+      <!-- Right column: distribution + run info -->
+      <div class="flex flex-col gap-6">
+        <!-- Requests Status Distribution -->
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
+          <h2 class="font-title-sm text-title-sm text-on-surface">Status Distribution</h2>
+          @if (distribution(); as dist) {
+            <div class="mt-4 flex items-center gap-5">
+              <div class="relative h-32 w-32 shrink-0 rounded-full" [style.background]="dist.gradient">
+                <div
+                  class="absolute inset-[14px] flex flex-col items-center justify-center rounded-full bg-surface-container-lowest"
+                >
+                  <span class="font-title-sm text-title-sm text-on-surface">{{ dist.total | number }}</span>
+                  <span class="text-label-xs font-label-xs uppercase text-secondary">Total</span>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2 text-body-sm">
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 rounded-full bg-green-500"></span>
+                  <span class="text-on-surface">Success</span>
+                  <span class="ml-auto font-medium text-on-surface">{{ dist.pass | number }} ({{ dist.passPercent }}%)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+                  <span class="text-on-surface">Warning</span>
+                  <span class="ml-auto font-medium text-on-surface">{{ dist.warning | number }} ({{ dist.warningPercent }}%)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                  <span class="text-on-surface">Fail</span>
+                  <span class="ml-auto font-medium text-on-surface">{{ dist.fail | number }} ({{ dist.failPercent }}%)</span>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <p class="mt-3 text-body-sm text-secondary">No data yet (run has not finished).</p>
+          }
+        </div>
+
+        <!-- Run Information -->
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
+          <h2 class="font-title-sm text-title-sm text-on-surface">Run Information</h2>
+          <dl class="mt-3 flex flex-col gap-2 text-body-sm">
+            <div class="flex justify-between gap-4">
+              <dt class="text-secondary">Run ID</dt>
+              <dd class="text-code-sm font-code-sm font-medium text-primary">{{ displayRunId(run.id) }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-secondary">Status</dt>
+              <dd class="text-on-surface">{{ run.status }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-secondary">Environment</dt>
+              <dd class="text-on-surface">{{ run.environment }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-secondary">Run Type</dt>
+              <dd class="text-on-surface">{{ run.runType }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-secondary">Total Requests</dt>
+              <dd class="text-on-surface">{{ run.totalRequest !== null ? (run.totalRequest | number) : '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-secondary">Started</dt>
+              <dd class="text-on-surface">{{ run.startTime ? (run.startTime | date: 'dd/MM/yyyy HH:mm') : '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-secondary">Ended</dt>
+              <dd class="text-on-surface">{{ run.endTime ? (run.endTime | date: 'dd/MM/yyyy HH:mm') : '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-secondary">Duration</dt>
+              <dd class="text-on-surface">{{ formatDuration(run.durationMs) }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-secondary">Created</dt>
+              <dd class="text-on-surface">{{ run.createdDate | date: 'dd/MM/yyyy HH:mm' }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  } @else if (activeTab() === 'apis') {
+    <div
+      class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm"
+    >
+      <!-- Filters -->
+      <div class="flex flex-col gap-4 border-b border-outline-variant p-4 md:flex-row md:items-center">
+        <div class="flex-1">
+          <app-input [formControl]="apiSearchControl" [icon]="searchIcon" placeholder="Search by API / endpoint..." />
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="whitespace-nowrap text-body-sm text-secondary">Status</span>
+          <app-select [formControl]="apiStatusControl" [options]="apiStatusOptions" />
+        </div>
+      </div>
+
+      <app-data-table
+        [columns]="apiColumns"
+        [rows]="filteredApis()"
+        [sortKey]="apiSort()"
+        [sortDirection]="apiSortDir()"
+        (sortChange)="onApiSort($event)"
+        emptyMessage="No matching APIs."
+      >
+        <ng-template appCell="apiName" let-row>
+          <div class="flex items-center gap-2">
+            <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-xs font-label-xs font-medium text-on-surface">{{ asStatistic(row).method }}</span>
+            <span class="text-body-sm font-medium text-on-surface">{{ asStatistic(row).apiName }}</span>
+          </div>
+        </ng-template>
+        <ng-template appCell="endpoint" let-row>
+          <span class="block max-w-[220px] truncate text-code-sm font-code-sm text-secondary" [title]="asStatistic(row).endpoint">{{ asStatistic(row).endpoint }}</span>
+        </ng-template>
+        <ng-template appCell="requestCount" let-row>
+          <span class="block text-right text-body-sm text-on-surface">{{ asStatistic(row).requestCount | number }}</span>
+        </ng-template>
+        <ng-template appCell="passedCount" let-row>
+          <span class="block text-right text-body-sm font-medium text-green-600">{{ asStatistic(row).passedCount | number }}</span>
+        </ng-template>
+        <ng-template appCell="warningCount" let-row>
+          <span class="block text-right text-body-sm font-medium text-yellow-600">{{ asStatistic(row).warningCount | number }}</span>
+        </ng-template>
+        <ng-template appCell="failedCount" let-row>
+          <span class="block text-right text-body-sm font-medium text-red-700">{{ asStatistic(row).failedCount | number }}</span>
+        </ng-template>
+        <ng-template appCell="successRate" let-row>
+          <span class="block text-right text-body-sm font-medium text-on-surface">{{ successRate(asStatistic(row)) }}</span>
+        </ng-template>
+        <ng-template appCell="avgResponseTimeMs" let-row>
+          <span class="block text-right text-code-sm font-code-sm text-secondary">{{ formatMs(asStatistic(row).avgResponseTimeMs) }}</span>
+        </ng-template>
+        <ng-template appCell="apiStatus" let-row>
+          <div class="flex justify-center">
+            <app-status-badge [label]="resultStatusLabel(apiHealth(asStatistic(row)))" [tone]="apiHealthTone(asStatistic(row))" />
+          </div>
+        </ng-template>
+      </app-data-table>
+    </div>
+  } @else if (activeTab() === 'requests') {
+    <div
+      class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm"
+    >
+      <!-- Filters -->
+      <div class="flex flex-col gap-3 border-b border-outline-variant p-4">
+        <div class="flex items-center gap-2">
+          <div class="flex-1">
+            <app-input [formControl]="requestSearchControl" [icon]="searchIcon" placeholder="Search by request / endpoint..." />
+          </div>
+          <div class="w-40 shrink-0">
+            <app-select [formControl]="requestStatusControl" [options]="apiStatusOptions" [fullWidth]="true" />
+          </div>
+        </div>
+        @if (apiFilterOptions().length > 2) {
+          <app-select [formControl]="requestApiControl" [options]="apiFilterOptions()" [fullWidth]="true" />
+        }
+      </div>
+
+      <app-data-table
+        [columns]="requestColumns"
+        [rows]="responses().items"
+        [loading]="responsesLoading()"
+        [sortKey]="requestSort()"
+        [sortDirection]="requestSortDir()"
+        (sortChange)="onRequestSort($event)"
+        emptyMessage="No requests."
+      >
+        <ng-template appCell="title" let-row>
+          <span class="text-body-sm font-medium text-on-surface">{{ asResponse(row).title }}</span>
+        </ng-template>
+        <ng-template appCell="endpoint" let-row>
+          <div class="flex items-center gap-2">
+            <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-xs font-label-xs font-medium text-on-surface">{{ asResponse(row).method }}</span>
+            <span class="block max-w-[180px] truncate text-code-sm font-code-sm text-secondary" [title]="asResponse(row).endpoint">{{ asResponse(row).endpoint }}</span>
+          </div>
+        </ng-template>
+        <ng-template appCell="status" let-row>
+          <div class="flex justify-center">
+            <app-status-badge [label]="resultStatusLabel(asResponse(row).status)" [tone]="responseStatusTone(asResponse(row).status)" />
+          </div>
+        </ng-template>
+        <ng-template appCell="statusCode" let-row>
+          <span class="block text-right text-code-sm font-code-sm text-on-surface">{{ asResponse(row).statusCode ?? '—' }}</span>
+        </ng-template>
+        <ng-template appCell="durationMs" let-row>
+          <span class="block text-right text-code-sm font-code-sm text-secondary">{{ formatMs(asResponse(row).durationMs) }}</span>
+        </ng-template>
+        <ng-template appCell="responseSize" let-row>
+          <span class="block text-right text-code-sm font-code-sm text-secondary">{{ formatSize(asResponse(row).responseSize) }}</span>
+        </ng-template>
+        <ng-template appCell="createdDate" let-row>
+          <span class="text-body-sm text-secondary">{{ asResponse(row).createdDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </ng-template>
+      </app-data-table>
+
+      <app-paginator
+        [pageNumber]="responses().pageNumber"
+        [pageSize]="responses().pageSize"
+        [totalCount]="responses().totalCount"
+        (pageChange)="onRequestPage($event)"
+      />
+    </div>
+  } @else if (activeTab() === 'results') {
+    <app-run-results [runId]="runId" [apis]="detail()?.apiStatistics ?? []" (rerun)="onResultRerun()" />
+  } @else {
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-8 text-center shadow-sm">
+      <p class="text-body-sm text-secondary">This feature is under development.</p>
+    </div>
+  }
+  }
+}

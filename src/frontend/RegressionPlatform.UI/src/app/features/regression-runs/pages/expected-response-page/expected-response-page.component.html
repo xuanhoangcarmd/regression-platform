@@ -1,0 +1,395 @@
+<!-- Actions (the breadcrumb already shows the run) -->
+<div class="mb-3 flex justify-end">
+  <div class="flex flex-wrap items-center gap-2">
+    @if (store.pendingCount() > 0) {
+      <span class="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-body-sm font-medium text-amber-800">
+        <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+        {{ store.pendingCount() }} unsaved
+      </span>
+      <app-button variant="ghost" icon="undo" (click)="store.discardAll()">Discard all</app-button>
+      <app-button variant="secondary" icon="rule" (click)="openReview()">Review changes</app-button>
+    }
+    <app-button
+      icon="save"
+      [disabled]="store.pendingCount() === 0 || store.hasInvalidDraft()"
+      [loading]="store.saving()"
+      (click)="openReview()"
+    >
+      Save all{{ store.pendingCount() ? ' (' + store.pendingCount() + ')' : '' }}
+    </app-button>
+  </div>
+</div>
+
+<!-- Banner -->
+@if (store.banner(); as banner) {
+  <div
+    class="mb-4 flex items-center gap-2 rounded-lg border px-3 py-2 text-body-sm"
+    [class.border-green-200]="banner.tone === 'success'"
+    [class.bg-green-50]="banner.tone === 'success'"
+    [class.text-green-800]="banner.tone === 'success'"
+    [class.border-red-200]="banner.tone === 'error'"
+    [class.bg-red-50]="banner.tone === 'error'"
+    [class.text-red-800]="banner.tone === 'error'"
+  >
+    <mat-icon class="text-[18px]">{{ banner.tone === 'success' ? 'check_circle' : 'error' }}</mat-icon>
+    <span class="flex-1">{{ banner.text }}</span>
+    <button type="button" class="flex items-center opacity-70 hover:opacity-100" (click)="store.dismissBanner()">
+      <mat-icon class="text-[18px]">close</mat-icon>
+    </button>
+  </div>
+}
+
+<!-- 2 panes: Requests (API combobox on top) · Editor -->
+<div class="grid min-h-[560px] grid-cols-1 gap-4 lg:h-[calc(100vh-10rem)] lg:grid-cols-[340px_minmax(0,1fr)]">
+  <!-- Requests -->
+  <section class="flex min-h-0 flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
+    <div class="flex flex-col gap-2 border-b border-outline-variant p-2.5">
+      <!-- API picker -->
+      @if (store.apisLoading()) {
+        <div class="h-9 animate-pulse rounded-lg bg-surface-container-high"></div>
+      } @else {
+        <app-select [formControl]="apiControl" [options]="apiOptions()" [fullWidth]="true" />
+        @if (store.selectedApi(); as api) {
+          <div class="flex min-w-0 items-center gap-1.5 text-label-xs font-label-xs text-secondary">
+            <span class="rounded px-1.5 py-0.5 font-semibold" [class]="methodClass(api.method)">{{ api.method }}</span>
+            <span class="truncate font-code-sm" [title]="api.endpoint">{{ api.endpoint }}</span>
+          </div>
+        }
+      }
+      <div class="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 focus-within:border-primary">
+        <mat-icon class="text-[18px] text-secondary">search</mat-icon>
+        <input
+          type="text"
+          class="w-full bg-transparent py-1.5 text-body-sm text-on-surface outline-none"
+          placeholder="Search title / description..."
+          [value]="store.search()"
+          (input)="store.setSearch($any($event.target).value)"
+        />
+      </div>
+      <div class="flex rounded-lg border border-outline-variant p-0.5">
+        @for (option of filterOptions; track option.value) {
+          <button
+            type="button"
+            (click)="store.setFilter(option.value)"
+            class="flex-1 rounded-md px-2 py-1 text-body-sm transition-colors"
+            [class.bg-primary-container]="store.filter() === option.value"
+            [class.text-on-primary-container]="store.filter() === option.value"
+            [class.text-secondary]="store.filter() !== option.value"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Selection bar -->
+    <div class="flex items-center gap-2 border-b border-outline-variant bg-surface-container-low px-2.5 py-1.5">
+      <input
+        type="checkbox"
+        class="h-4 w-4 accent-primary-container"
+        title="Select all visible"
+        [checked]="store.allVisibleChecked()"
+        (change)="store.toggleAllVisible()"
+      />
+      <span class="flex-1 text-label-xs font-label-xs text-secondary">
+        {{ checkedCount() ? checkedCount() + ' selected' : store.visibleRequests().length + ' request(s)' }}
+      </span>
+      @if (checkedCount()) {
+        <button
+          type="button"
+          class="flex items-center gap-1 rounded-md px-2 py-1 text-body-sm font-medium text-primary hover:bg-surface-container"
+          title="Set / remove a field in every selected response"
+          (click)="openBulk()"
+        >
+          <mat-icon class="text-[16px]">dynamic_feed</mat-icon> Bulk edit
+        </button>
+        @if (checkedEdited().length) {
+          <button
+            type="button"
+            class="flex items-center gap-1 rounded-md px-2 py-1 text-body-sm text-secondary hover:bg-surface-container hover:text-red-700"
+            [title]="'Restore ' + checkedEdited().length + ' edited response(s) to the original'"
+            (click)="askRestore(checkedEditedIds())"
+          >
+            <mat-icon class="text-[16px]">restore</mat-icon>
+          </button>
+        }
+        <button type="button" class="flex items-center rounded-md p-1 text-secondary hover:bg-surface-container" title="Clear selection" (click)="store.clearChecked()">
+          <mat-icon class="text-[16px]">close</mat-icon>
+        </button>
+      }
+    </div>
+
+    <div class="min-h-0 flex-1 overflow-auto">
+      @if (store.requestsLoading()) {
+        <div class="animate-pulse space-y-2 p-2.5">
+          @for (i of skeletonRows; track i) {
+            <div class="h-10 rounded bg-surface-container-high"></div>
+          }
+        </div>
+      } @else {
+        @for (request of store.renderedRequests(); track request.requestId) {
+          <div
+            class="flex cursor-pointer items-center gap-2 border-b border-l-2 border-b-outline-variant px-2.5 py-2 transition-colors hover:bg-surface-container-low"
+            [class.border-l-primary]="store.activeRequestId() === request.requestId"
+            [class.border-l-transparent]="store.activeRequestId() !== request.requestId"
+            [class.bg-surface-container]="store.activeRequestId() === request.requestId"
+            (click)="store.openRequest(request.requestId)"
+          >
+            <input
+              type="checkbox"
+              class="h-4 w-4 shrink-0 accent-primary-container"
+              [checked]="store.checked().has(request.requestId)"
+              (click)="$event.stopPropagation()"
+              (change)="store.toggleChecked(request.requestId)"
+            />
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5">
+                <span class="truncate text-body-sm font-medium text-on-surface">{{ request.title }}</span>
+                @if (store.drafts().has(request.requestId)) {
+                  <span class="h-2 w-2 shrink-0 rounded-full bg-amber-500" title="Unsaved changes"></span>
+                }
+              </div>
+              <p class="truncate text-label-xs font-label-xs text-secondary">{{ request.description || '—' }}</p>
+            </div>
+            <div class="flex shrink-0 flex-col items-end gap-0.5">
+              <span
+                class="text-code-sm font-code-sm"
+                [class.text-red-700]="(request.statusCode ?? 0) >= 400"
+                [class.text-secondary]="(request.statusCode ?? 0) < 400"
+                >{{ request.statusCode ?? '—' }}</span
+              >
+              @if (request.isEdited) {
+                <span
+                  class="flex items-center gap-0.5 rounded bg-blue-50 px-1 text-label-xs font-label-xs text-blue-700"
+                  [title]="'Edited' + (request.editedBy ? ' by ' + request.editedBy : '') + ' · ' + (request.editedDate | date: 'dd/MM/yyyy HH:mm')"
+                >
+                  <mat-icon class="!h-3 !w-3 text-[12px]">edit</mat-icon> Edited
+                </span>
+              }
+            </div>
+          </div>
+        } @empty {
+          <p class="p-4 text-center text-body-sm text-secondary">No requests match.</p>
+        }
+        @if (store.hiddenCount() > 0) {
+          <button
+            type="button"
+            class="w-full py-2 text-body-sm font-medium text-primary hover:bg-surface-container-low"
+            (click)="store.showMore()"
+          >
+            Show more ({{ store.hiddenCount() }} remaining)
+          </button>
+        }
+      }
+    </div>
+  </section>
+
+  <!-- Editor -->
+  <section class="flex min-h-[480px] flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm lg:min-h-0">
+    @if (store.active(); as active) {
+      <div class="flex items-center gap-2 border-b border-outline-variant px-3 py-2.5">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2">
+            <h2 class="truncate font-title-sm text-title-sm text-on-surface">{{ active.detail.title }}</h2>
+            @if (active.isDraft) {
+              <span class="rounded-full bg-amber-100 px-2 py-0.5 text-label-xs font-label-xs font-medium text-amber-800">Unsaved</span>
+            } @else if (active.detail.override) {
+              <span class="rounded-full bg-blue-50 px-2 py-0.5 text-label-xs font-label-xs font-medium text-blue-700">Expected (edited)</span>
+            } @else {
+              <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-xs font-label-xs font-medium text-secondary">Original</span>
+            }
+          </div>
+          @if (active.detail.override; as saved) {
+            <p class="truncate text-label-xs font-label-xs text-secondary">
+              Saved{{ saved.updatedBy ? ' by ' + saved.updatedBy : '' }} · {{ saved.updatedDate | date: 'dd/MM/yyyy HH:mm' }}{{ saved.reason ? ' · ' + saved.reason : '' }}
+            </p>
+          }
+        </div>
+        @if (active.isDraft) {
+          <app-button variant="ghost" size="sm" icon="undo" (click)="store.discardDraft(active.detail.requestId)">Undo changes</app-button>
+        }
+        @if (active.detail.override) {
+          <app-button variant="ghost" size="sm" icon="restore" (click)="askRestore([active.detail.requestId])">Restore original</app-button>
+        }
+      </div>
+      <div class="min-h-0 flex-1">
+        <app-expected-json-editor [state]="active" (edit)="onEdit($event)" />
+      </div>
+    } @else if (store.detailLoading()) {
+      <div class="animate-pulse space-y-2 p-4">
+        @for (i of skeletonRows; track i) {
+          <div class="h-5 rounded bg-surface-container-high" [style.width.%]="90 - i * 10"></div>
+        }
+      </div>
+    } @else {
+      <div class="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
+        <mat-icon class="text-[40px] text-secondary">edit_note</mat-icon>
+        <p class="text-body-sm text-on-surface">Select a request to edit its expected response.</p>
+        <p class="max-w-sm text-label-xs font-label-xs text-secondary">
+          Tick several requests to change one field in all of them at once (Bulk edit). Nothing is saved until
+          <strong>Save all</strong>.
+        </p>
+      </div>
+    }
+  </section>
+</div>
+
+<!-- Review & save -->
+@if (reviewOpen()) {
+  <app-modal
+    size="lg"
+    title="Review changes"
+    [confirmLabel]="'Save ' + store.pendingCount() + ' change(s)'"
+    [confirmDisabled]="store.pendingCount() === 0 || store.hasInvalidDraft()"
+    [confirmLoading]="store.saving()"
+    (confirm)="saveAll()"
+    (cancelled)="reviewOpen.set(false)"
+  >
+    <div class="flex flex-col gap-3">
+      <div class="max-h-72 overflow-auto rounded-lg border border-outline-variant">
+        @for (item of store.pending(); track item.draft.requestId) {
+          <div class="flex items-center gap-2 border-b border-outline-variant px-3 py-2 last:border-b-0">
+            <div class="min-w-0 flex-1">
+              <button type="button" class="truncate text-body-sm font-medium text-primary hover:underline" (click)="openFromReview(item.draft.requestId)">
+                {{ item.title }}
+              </button>
+              <p class="truncate text-label-xs font-label-xs text-secondary">
+                {{ item.apiName }} · status {{ item.draft.statusCode ?? '—' }}{{ item.draft.reason ? ' · ' + item.draft.reason : '' }}
+              </p>
+            </div>
+            @if (!item.jsonValid) {
+              <span class="rounded bg-red-50 px-1.5 text-label-xs font-label-xs text-red-700">Invalid JSON</span>
+            }
+            <button
+              type="button"
+              class="flex items-center rounded p-1 text-secondary hover:bg-surface-container hover:text-red-700"
+              title="Discard this change"
+              (click)="store.discardDraft(item.draft.requestId)"
+            >
+              <mat-icon class="text-[18px]">close</mat-icon>
+            </button>
+          </div>
+        } @empty {
+          <p class="p-3 text-body-sm text-secondary">No unsaved changes.</p>
+        }
+      </div>
+      <label class="flex flex-col gap-1">
+        <span class="text-body-sm font-medium text-on-surface">Reason / ticket for changes without one</span>
+        <input
+          type="text"
+          maxlength="500"
+          class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+          placeholder="e.g. Sprint 2 — JIRA-123"
+          [value]="commonReason()"
+          (input)="commonReason.set($any($event.target).value)"
+        />
+      </label>
+      @if (store.hasInvalidDraft()) {
+        <p class="text-body-sm text-error">Fix or discard the drafts with invalid JSON before saving.</p>
+      }
+    </div>
+  </app-modal>
+}
+
+<!-- Bulk field edit -->
+@if (bulkOpen()) {
+  <app-modal
+    size="lg"
+    [title]="'Bulk edit — ' + checkedCount() + ' request(s)'"
+    [confirmLabel]="bulkPreview() ? 'Apply to ' + bulkMatched() + ' request(s)' : 'Preview'"
+    [confirmDisabled]="!!bulkPreview() && bulkMatched() === 0"
+    [confirmLoading]="bulkBusy()"
+    (confirm)="applyBulk()"
+    (cancelled)="bulkOpen.set(false)"
+  >
+    <div class="flex flex-col gap-3">
+      <label class="flex flex-col gap-1">
+        <span class="text-body-sm font-medium text-on-surface">JSON path</span>
+        <input
+          type="text"
+          class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-code-sm font-code-sm text-on-surface outline-none focus:border-primary"
+          placeholder="$.DataItems[*].Value"
+          [value]="bulkPath()"
+          (input)="bulkPath.set($any($event.target).value); onBulkChange()"
+        />
+        <span class="text-label-xs font-label-xs text-secondary">
+          Supports <code>.field</code>, <code>[0]</code>, <code>[*]</code> (every item) and <code>['odd key']</code>.
+        </span>
+      </label>
+      <div class="flex gap-2">
+        @for (option of [{ v: 'set', l: 'Set value' }, { v: 'remove', l: 'Remove field' }]; track option.v) {
+          <button
+            type="button"
+            (click)="bulkAction.set($any(option.v)); onBulkChange()"
+            class="flex-1 rounded-lg border px-3 py-2 text-body-sm transition-colors"
+            [class.border-primary]="bulkAction() === option.v"
+            [class.bg-surface-container-low]="bulkAction() === option.v"
+            [class.border-outline-variant]="bulkAction() !== option.v"
+          >
+            {{ option.l }}
+          </button>
+        }
+      </div>
+      @if (bulkAction() === 'set') {
+        <label class="flex flex-col gap-1">
+          <span class="text-body-sm font-medium text-on-surface">New value</span>
+          <input
+            type="text"
+            class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-code-sm font-code-sm text-on-surface outline-none focus:border-primary"
+            placeholder='"text", 12.5, true, null, {"a":1}'
+            [value]="bulkValue()"
+            (input)="bulkValue.set($any($event.target).value); onBulkChange()"
+          />
+          <span class="text-label-xs font-label-xs text-secondary">
+            A JSON literal; anything that isn't valid JSON is used as text. A missing last field is created.
+          </span>
+        </label>
+      }
+
+      @if (bulkError()) {
+        <p class="text-body-sm text-error">{{ bulkError() }}</p>
+      }
+
+      @if (bulkPreview(); as preview) {
+        <div class="rounded-lg border border-outline-variant">
+          <p class="border-b border-outline-variant bg-surface-container-low px-3 py-1.5 text-body-sm text-on-surface">
+            <strong>{{ bulkTotal() }}</strong> place(s) in <strong>{{ bulkMatched() }}</strong>/{{ preview.length }} request(s)
+          </p>
+          <div class="max-h-48 overflow-auto">
+            @for (item of preview; track item.requestId) {
+              <div class="flex items-center justify-between border-b border-outline-variant px-3 py-1 text-body-sm last:border-b-0">
+                <span class="text-on-surface">{{ item.title }}</span>
+                @if (item.error) {
+                  <span class="text-label-xs font-label-xs text-secondary">{{ item.error }}</span>
+                } @else {
+                  <span [class.text-secondary]="item.count === 0" [class.text-on-surface]="item.count > 0">
+                    {{ item.count ? item.count + ' match(es)' : 'no match' }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <p class="text-label-xs font-label-xs text-secondary">Applied changes become drafts — review them, then Save all.</p>
+      }
+    </div>
+  </app-modal>
+}
+
+<!-- Restore original -->
+@if (restoreIds(); as ids) {
+  <app-modal
+    type="remove"
+    size="sm"
+    title="Restore original"
+    confirmLabel="Restore"
+    [confirmLoading]="store.saving()"
+    (confirm)="confirmRestore()"
+    (cancelled)="restoreIds.set(null)"
+  >
+    <p class="text-body-sm text-on-surface">
+      Delete the saved expected version of {{ ids.length }} response(s)? Compares will use the original captured
+      response again.
+    </p>
+  </app-modal>
+}

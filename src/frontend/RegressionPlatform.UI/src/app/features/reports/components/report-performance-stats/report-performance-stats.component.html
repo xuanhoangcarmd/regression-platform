@@ -1,0 +1,80 @@
+@if (loading()) {
+  <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-10 text-center text-body-sm text-secondary shadow-sm">
+    Loading performance statistics…
+  </div>
+} @else if (errorMessage()) {
+  <div class="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-6 text-center text-body-sm text-error shadow-sm">
+    {{ errorMessage() }}
+  </div>
+} @else {
+  <!-- Latency histogram -->
+  @if (hasHistogram()) {
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
+      <h2 class="font-title-sm text-title-sm text-on-surface">Latency Distribution</h2>
+      <p class="text-body-sm text-secondary">How many requests fall in each response-time range ({{ runATitle() }} vs {{ runBTitle() }}).</p>
+      <div class="mt-2">
+        <apx-chart
+          [series]="histogramChart().series"
+          [chart]="histogramChart().chart"
+          [xaxis]="histogramChart().xaxis"
+          [yaxis]="histogramChart().yaxis"
+          [stroke]="histogramChart().stroke"
+          [dataLabels]="histogramChart().dataLabels"
+          [legend]="histogramChart().legend"
+          [grid]="histogramChart().grid"
+          [tooltip]="histogramChart().tooltip"
+          [colors]="histogramChart().colors"
+          [plotOptions]="histogramChart().plotOptions"
+          [fill]="histogramChart().fill"
+        />
+      </div>
+    </div>
+  }
+
+  <!-- Per-API performance table (p95 / max / avg size / Δ% — dimensions not on the avg bar) -->
+  @if (hasApiRows()) {
+    <div class="mt-6 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
+      <div class="border-b border-outline-variant p-4">
+        <h2 class="font-title-sm text-title-sm text-on-surface">Performance by API</h2>
+        <p class="text-body-sm text-secondary">Tail latency, max, payload size and average change ({{ runATitle() }} → {{ runBTitle() }}).</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-body-sm">
+          <thead class="border-b border-outline-variant text-label-xs font-label-xs uppercase text-secondary">
+            <tr>
+              <th class="px-4 py-2">API</th>
+              <th class="px-4 py-2">p95 (A → B)</th>
+              <th class="px-4 py-2">Max (A → B)</th>
+              <th class="px-4 py-2">Min (A → B)</th>
+              <th class="px-4 py-2">Avg size (A → B)</th>
+              <th class="px-4 py-2 text-right">Δ% avg</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant">
+            @for (row of apiRows(); track row.apiName) {
+              <tr>
+                <td class="px-4 py-2">
+                  <div class="flex items-center gap-2">
+                    <span class="rounded bg-surface-container-high px-1.5 py-0.5 text-label-xs font-label-xs font-medium text-on-surface">{{ row.method }}</span>
+                    <span class="font-medium text-on-surface">{{ row.apiName }}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-2 text-code-sm font-code-sm text-secondary">{{ row.p95 }}</td>
+                <td class="px-4 py-2 text-code-sm font-code-sm text-secondary">{{ row.max }}</td>
+                <td class="px-4 py-2 text-code-sm font-code-sm text-secondary">{{ row.min }}</td>
+                <td class="px-4 py-2 text-code-sm font-code-sm text-secondary">{{ row.size }}</td>
+                <td class="px-4 py-2 text-right font-medium"
+                  [class.text-red-600]="row.tone === 'bad'"
+                  [class.text-green-600]="row.tone === 'good'"
+                  [class.text-secondary]="row.tone === 'neutral'"
+                >
+                  {{ row.delta ?? '—' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+}

@@ -1,0 +1,46 @@
+@if (!confirming()) {
+  <!-- Step 1: pick the API to purge -->
+  <app-modal
+    type="update"
+    size="sm"
+    title="Delete API data"
+    confirmLabel="Continue"
+    [confirmDisabled]="!selectedApiId()"
+    (confirm)="proceed()"
+    (cancelled)="closed.emit()"
+  >
+    <div class="flex flex-col gap-2">
+      <p class="text-body-sm text-secondary">
+        Delete <span class="font-medium text-on-surface">all requests</span> of one API in this dataset,
+        including their captured run responses.
+      </p>
+      <span class="text-body-sm font-medium text-on-surface">API</span>
+      <app-select
+        [formControl]="apiControl"
+        [options]="apiOptions()"
+        placeholder="-- Select an API --"
+        [fullWidth]="true"
+      />
+    </div>
+  </app-modal>
+} @else {
+  <!-- Step 2: small confirm -->
+  <app-modal
+    type="remove"
+    size="sm"
+    title="Delete all data?"
+    confirmLabel="Delete"
+    [confirmLoading]="loading()"
+    (confirm)="confirm()"
+    (cancelled)="back()"
+  >
+    <p class="text-body-sm leading-relaxed text-on-surface">
+      Delete <span class="font-medium">all requests of {{ selectedApiLabel() }}</span> in this dataset?
+    </p>
+    <p class="mt-2 text-body-sm leading-relaxed text-secondary">
+      Requests that were <span class="font-medium text-on-surface">never run</span> are permanently removed.
+      Requests <span class="font-medium text-on-surface">with run history</span> are archived — hidden from the pool
+      and never run again, but their past responses stay available for comparison. This cannot be undone.
+    </p>
+  </app-modal>
+}

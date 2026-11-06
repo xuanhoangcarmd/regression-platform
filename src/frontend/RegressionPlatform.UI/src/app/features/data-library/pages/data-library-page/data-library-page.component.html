@@ -1,0 +1,440 @@
+<!-- Page header -->
+<div class="mb-3 flex items-start justify-between gap-3">
+  <div>
+    <h1 class="font-headline-md text-headline-md text-on-surface">Data Library</h1>
+    <p class="mt-1 text-body-sm text-secondary">Search payloads &amp; raw buffers by YMME, DTC, MIL.</p>
+  </div>
+  <app-button [icon]="generatorIcon" (click)="showGeneratorModal.set(true)">Generate Payload</app-button>
+</div>
+
+<!-- Filters -->
+<form
+  [formGroup]="form"
+  (ngSubmit)="onSearch()"
+  class="mb-4 flex flex-col gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm"
+>
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">VIN</span>
+      <app-input formControlName="vin" [icon]="searchIcon" placeholder="Search VIN..." />
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <div class="flex items-center gap-2">
+        <span class="text-body-sm font-medium text-on-surface">Year</span>
+        <button
+          type="button"
+          (click)="yearRangeExpanded.set(!yearRangeExpanded())"
+          class="inline-flex items-center gap-0.5 text-label-xs font-label-xs text-primary transition-colors hover:underline"
+        >
+          <mat-icon class="text-[14px]">{{ yearRangeExpanded() ? expandLessIcon : expandMoreIcon }}</mat-icon>
+          Range
+        </button>
+      </div>
+      <app-select formControlName="year" [options]="yearOptions()" [fullWidth]="true" />
+    </div>
+    @if (yearRangeExpanded()) {
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Year range</span>
+      <div class="flex items-center gap-2">
+        <input
+          type="number"
+          formControlName="yearFrom"
+          placeholder="From"
+          min="1900"
+          max="2100"
+          class="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface outline-none transition-shadow placeholder:text-slate-400 focus:border-primary-container focus:ring-2 focus:ring-primary-container"
+        />
+        <span class="text-secondary">–</span>
+        <input
+          type="number"
+          formControlName="yearTo"
+          placeholder="To"
+          min="1900"
+          max="2100"
+          class="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface outline-none transition-shadow placeholder:text-slate-400 focus:border-primary-container focus:ring-2 focus:ring-primary-container"
+        />
+      </div>
+    </div>
+    }
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Make</span>
+      <app-select formControlName="make" [options]="makeOptions()" [fullWidth]="true" />
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Model</span>
+      <app-select formControlName="model" [options]="modelOptions()" [fullWidth]="true" />
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Engine</span>
+      <app-select formControlName="engine" [options]="engineOptions()" [fullWidth]="true" />
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">MIL</span>
+      <app-select formControlName="mil" [options]="milOptions" [fullWidth]="true" />
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">LED</span>
+      <app-select formControlName="led" [options]="ledOptions" [fullWidth]="true" />
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Raw Buffer</span>
+      <app-select formControlName="hasRawBuffer" [options]="rawBufferOptions" [fullWidth]="true" />
+    </div>
+  </div>
+
+  <!-- DTC filters (collapsed by default — many fields) -->
+  <div class="border-t border-outline-variant pt-3">
+    <button
+      type="button"
+      (click)="dtcExpanded.set(!dtcExpanded())"
+      class="flex items-center gap-1.5 text-body-sm font-medium text-on-surface transition-colors hover:text-primary"
+    >
+      <mat-icon class="text-[18px]">{{ dtcExpanded() ? expandLessIcon : expandMoreIcon }}</mat-icon>
+      DTC filters
+      @if (hasDtcFilter()) {
+        <span class="ml-1 inline-block h-2 w-2 rounded-full bg-primary-container" title="DTC filters active"></span>
+      }
+      @if (!dtcExpanded()) {
+        <span class="ml-1 text-body-sm font-normal text-secondary">
+          Click to search by DTC code, source, system, status or definition
+        </span>
+      }
+    </button>
+
+    @if (dtcExpanded()) {
+      <!-- Row 1: the DTC-code filters (Primary / OEM / Format / Prefix) -->
+      <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="flex flex-col gap-1.5">
+          <span class="text-body-sm font-medium text-on-surface">Primary DTC</span>
+          <div class="flex gap-1.5">
+            <div class="flex w-28 shrink-0 flex-col">
+              <app-select formControlName="primaryDtcMode" [options]="dtcMatchModeOptions" [fullWidth]="true" />
+            </div>
+            <div class="flex flex-1 flex-col">
+              <app-input formControlName="primaryDtc" placeholder="MIL-causing DTC, e.g. P0420" />
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <span class="text-body-sm font-medium text-on-surface">OEM DTC</span>
+          <div class="flex gap-1.5">
+            <div class="flex w-28 shrink-0 flex-col">
+              <app-select formControlName="dtcCodeMode" [options]="dtcMatchModeOptions" [fullWidth]="true" />
+            </div>
+            <div class="flex flex-1 flex-col">
+              <app-input formControlName="dtcCode" placeholder="e.g. P0420, C1101" />
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-baseline gap-2">
+            <span class="shrink-0 text-body-sm font-medium text-on-surface">DTC Format</span>
+            <span
+              class="min-w-0 flex-1 truncate text-[10px] leading-tight text-secondary"
+              title="Match by code shape (x = any character). With a Primary/OEM DTC value it becomes a prefix (e.g. xxxx + P0 → P0xx)."
+            >
+              Match by code shape (x = any character). With a Primary/OEM DTC value it becomes a prefix (e.g. xxxx + P0 → P0xx).
+            </span>
+          </div>
+          <app-select formControlName="dtcFormat" [options]="dtcFormatOptions" [fullWidth]="true" />
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-baseline gap-2">
+            <span class="shrink-0 text-body-sm font-medium text-on-surface">DTC Prefix</span>
+            <span
+              class="min-w-0 flex-1 truncate text-[10px] leading-tight text-secondary"
+              title="By code category (P/B/C/U), or starts with a number."
+            >
+              By code category (P/B/C/U), or starts with a number.
+            </span>
+          </div>
+          <app-select formControlName="dtcPrefix" [options]="dtcPrefixOptions" [fullWidth]="true" />
+        </div>
+      </div>
+
+      <!-- Row 2: the remaining DTC attribute filters (hidden until the user opts in) -->
+      <button
+        type="button"
+        (click)="dtcMoreExpanded.set(!dtcMoreExpanded())"
+        class="mt-3 inline-flex items-center gap-1 text-label-xs font-label-xs text-primary transition-colors hover:text-primary-container"
+      >
+        <mat-icon class="text-[16px]">{{ dtcMoreExpanded() ? expandLessIcon : expandMoreIcon }}</mat-icon>
+        {{ dtcMoreExpanded() ? 'Fewer filters' : 'More filters (Source, System, Status, Definition)' }}
+      </button>
+
+      @if (dtcMoreExpanded()) {
+        <div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="flex flex-col gap-1.5">
+            <span class="text-body-sm font-medium text-on-surface">DTC Source</span>
+            <app-select formControlName="dtcSource" [options]="dtcSourceOptions" [fullWidth]="true" />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <span class="text-body-sm font-medium text-on-surface">DTC System</span>
+            <app-input formControlName="dtcSystem" placeholder="e.g. OBDII, ABS..." />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <span class="text-body-sm font-medium text-on-surface">DTC Status</span>
+            <app-input formControlName="dtcStatusType" placeholder="e.g. Stored, Pending" />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <span class="text-body-sm font-medium text-on-surface">DTC Definition</span>
+            <app-input formControlName="dtcDefinition" placeholder="Search definition..." />
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <div class="flex items-center justify-end gap-2">
+    <app-button type="button" variant="secondary" [disabled]="loading()" (click)="onReset()">Reset</app-button>
+    <app-button type="submit" [icon]="searchIcon" [loading]="loading()">Search</app-button>
+  </div>
+</form>
+
+<!-- Results -->
+<div class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
+  <app-data-table [columns]="columns" [rows]="result().items" [loading]="loading()" emptyMessage="No matching payloads.">
+    <!-- YMME column header: sort popover (Year / Make / Model / Engine Type, each asc/desc) -->
+    <ng-template appHeader="ymme" let-col>
+      <button
+        type="button"
+        (click)="toggleSortMenu($event)"
+        class="inline-flex items-center gap-1 uppercase transition-colors hover:text-primary"
+        [class.text-primary]="sortBy() !== null"
+      >
+        {{ col.label }}
+        @if (sortBy() !== null) {
+          <mat-icon class="text-[16px]">{{ sortDir() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+        } @else {
+          <mat-icon class="text-[16px]">unfold_more</mat-icon>
+        }
+      </button>
+    </ng-template>
+
+    <ng-template appCell="vin" let-row>
+      <button type="button" (click)="selectProfile(row)" class="text-code-sm font-code-sm font-medium text-primary hover:underline">
+        {{ asProfile(row).vin || '—' }}
+      </button>
+    </ng-template>
+
+    <ng-template appCell="ymme" let-row>
+      <span class="text-body-sm text-on-surface">
+        {{ asProfile(row).year || '—' }} · {{ asProfile(row).make || '—' }} ·
+        {{ asProfile(row).model || '—' }} · {{ asProfile(row).engineType || '—' }}
+      </span>
+    </ng-template>
+
+    <ng-template appCell="mil" let-row>
+      <app-status-badge [label]="milLabel(asProfile(row).toolMilStatus)" [tone]="milTone(asProfile(row).toolMilStatus)" />
+    </ng-template>
+
+    <ng-template appCell="payloadCount" let-row>
+      <span class="block text-right text-body-sm text-on-surface">{{ asProfile(row).payloadCount }}</span>
+    </ng-template>
+
+    <ng-template appCell="dtcCount" let-row>
+      <span class="block text-right text-body-sm text-on-surface">{{ asProfile(row).dtcCount }}</span>
+    </ng-template>
+
+    <ng-template appCell="rawBufferCount" let-row>
+      @if (asProfile(row).rawBufferCount > 0) {
+        <span class="block text-right text-body-sm font-medium text-green-600">{{ asProfile(row).rawBufferCount }}</span>
+      } @else {
+        <span class="block text-right text-body-sm text-secondary">0</span>
+      }
+    </ng-template>
+
+    <ng-template appCell="actions" let-row>
+      <div class="flex items-center justify-center">
+        <button type="button" title="View details" (click)="selectProfile(row)" class="text-slate-400 transition-colors hover:text-primary-container">
+          <mat-icon class="text-[18px]">{{ viewIcon }}</mat-icon>
+        </button>
+      </div>
+    </ng-template>
+  </app-data-table>
+
+  <app-paginator
+    [pageNumber]="result().pageNumber"
+    [pageSize]="result().pageSize"
+    [totalCount]="result().totalCount"
+    (pageChange)="onPage($event)"
+  />
+</div>
+
+<!-- Detail -->
+@if (detailLoading()) {
+  <div class="mt-4 flex items-center justify-center gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-10 shadow-sm">
+    <mat-icon class="animate-spin text-[24px] text-primary">progress_activity</mat-icon>
+    <span class="text-body-sm text-secondary">Loading profile…</span>
+  </div>
+}
+@if (detail(); as d) {
+  <div class="mt-4 flex flex-col gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
+    <div class="flex items-start justify-between gap-2">
+      <div>
+        <h2 class="text-title-sm font-title-sm font-semibold text-on-surface">{{ d.vin || 'Profile #' + d.id }}</h2>
+        <p class="mt-0.5 text-body-sm text-secondary">
+          {{ d.year || '—' }} · {{ d.make || '—' }} · {{ d.model || '—' }} · {{ d.engineType || '—' }}
+        </p>
+      </div>
+      <button type="button" title="Close" (click)="detail.set(null)" class="text-secondary hover:text-on-surface">
+        <mat-icon class="text-[20px]">{{ closeIcon }}</mat-icon>
+      </button>
+    </div>
+
+    <!-- Snapshot -->
+    <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-body-sm sm:grid-cols-4">
+      <div><span class="text-secondary">USB Product ID: </span><span class="text-on-surface">{{ d.usbProductId !== null ? d.usbProductId : '—' }}</span></div>
+      <div><span class="text-secondary">MIL: </span><span class="text-on-surface">{{ milLabel(d.toolMilStatus) }}</span></div>
+      <div><span class="text-secondary">Primary DTC: </span><span class="text-on-surface">{{ d.primaryDtc || '—' }}</span></div>
+      <div><span class="text-secondary">LED: </span><span class="text-on-surface">{{ ledLabel(d.toolLedStatus) }}</span></div>
+      <div><span class="text-secondary">SIL: </span><span class="text-on-surface">{{ d.sil || '—' }}</span></div>
+      <div><span class="text-secondary">ABS Light: </span><span class="text-on-surface">{{ d.absLightStatus || '—' }}</span></div>
+      <div><span class="text-secondary">TPMS Light: </span><span class="text-on-surface">{{ d.tpmsLightStatus || '—' }}</span></div>
+      <div><span class="text-secondary">Battery: </span><span class="text-on-surface">{{ d.batteryConditionStatus || '—' }} {{ d.batteryVoltage ? '(' + d.batteryVoltage + ')' : '' }}</span></div>
+      <div><span class="text-secondary">Odometer: </span><span class="text-on-surface">{{ d.odometer !== null ? d.odometer : '—' }}</span></div>
+      <div><span class="text-secondary">Mileage: </span><span class="text-on-surface">{{ d.mileage !== null ? d.mileage : '—' }}</span></div>
+      <div><span class="text-secondary">Record Time: </span><span class="text-on-surface">{{ d.hasRecordTime ? 'Yes' : 'No' }}</span></div>
+      <div><span class="text-secondary">Freeze Frames: </span><span class="text-on-surface">{{ d.hasFreezeFrames ? 'Yes' : 'No' }}</span></div>
+      <div><span class="text-secondary">Monitors: </span><span class="text-on-surface">{{ d.hasMonitors ? 'Yes' : 'No' }}</span></div>
+    </div>
+
+    <!-- Payloads -->
+    <div>
+      <h3 class="mb-1 text-label-xs font-label-xs uppercase text-secondary">Payloads ({{ d.payloads.length }})</h3>
+      <div class="divide-y divide-outline-variant rounded-lg border border-outline-variant">
+        @for (p of d.payloads; track p.id) {
+          <div class="flex items-center justify-between gap-2 px-3 py-2 text-body-sm">
+            <span class="truncate text-on-surface">{{ p.name || 'Payload #' + p.id }}</span>
+            <div class="flex items-center gap-3">
+              <span class="text-secondary">{{ p.byteSize !== null ? (p.byteSize + ' B') : '' }}</span>
+              <button type="button" (click)="viewPayload(p.id)" class="text-primary hover:underline">View Payload (base64)</button>
+            </div>
+          </div>
+        } @empty {
+          <p class="px-3 py-2 text-body-sm text-secondary">No payloads.</p>
+        }
+      </div>
+    </div>
+
+    <!-- Raw buffers -->
+    <div>
+      <div class="mb-1 flex items-center justify-between gap-2">
+        <h3 class="text-label-xs font-label-xs uppercase text-secondary">Raw Buffers ({{ d.rawBuffers.length }})</h3>
+        @if (d.rawBuffers.length > 0) {
+          <button
+            type="button"
+            (click)="viewBuffersAsJson(d)"
+            [disabled]="buffersJsonLoading()"
+            class="text-body-sm text-primary transition-colors hover:underline disabled:opacity-60"
+            title="Combine all raw buffers into one JSON and view"
+          >
+            {{ buffersJsonLoading() ? 'Building…' : 'View Raw Buffer (JSON)' }}
+          </button>
+        }
+      </div>
+      <div class="divide-y divide-outline-variant rounded-lg border border-outline-variant">
+        @for (b of d.rawBuffers; track b.id) {
+          <div class="flex items-center justify-between gap-2 px-3 py-2 text-body-sm">
+            <span class="truncate font-medium text-on-surface">
+              {{ b.bufferType }}@if (b.segmentIndex !== null) {<span class="text-secondary"> #{{ b.segmentIndex }}</span>}
+            </span>
+            <div class="flex items-center gap-3">
+              <span class="text-secondary">{{ b.byteSize !== null ? (b.byteSize + ' B') : '' }}</span>
+              <button type="button" (click)="viewRawBuffer(b.id)" class="text-primary hover:underline">View</button>
+            </div>
+          </div>
+        } @empty {
+          <p class="px-3 py-2 text-body-sm text-secondary">No raw buffers.</p>
+        }
+      </div>
+    </div>
+
+    <!-- DTCs -->
+    @if (d.dtcs.length > 0) {
+      <div>
+        <h3 class="mb-1 text-label-xs font-label-xs uppercase text-secondary">DTCs ({{ d.dtcs.length }})</h3>
+        <div class="flex flex-wrap gap-2">
+          @for (dtc of d.dtcs; track dtc.id) {
+            <span class="rounded bg-amber-50 px-2 py-0.5 text-label-xs font-label-xs text-amber-700" [title]="dtc.source + (dtc.statusType ? ' · ' + dtc.statusType : '')">
+              {{ dtc.code }}
+            </span>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Base64 viewer (payload or raw buffer) -->
+    @if (base64Loading() || buffersJsonLoading()) {
+      <div class="flex items-center justify-center gap-3 rounded-lg border border-outline-variant py-8">
+        <mat-icon class="animate-spin text-[22px] text-primary">progress_activity</mat-icon>
+        <span class="text-body-sm text-secondary">{{ buffersJsonLoading() ? 'Building JSON…' : 'Loading base64…' }}</span>
+      </div>
+    }
+    @if (base64View(); as bv) {
+      <div class="rounded-lg border border-outline-variant">
+        <div class="flex items-center justify-between border-b border-outline-variant bg-surface-container px-3 py-1.5">
+          <span class="text-label-xs font-label-xs uppercase text-secondary">
+            base64 · {{ bv.label }} {{ bv.byteSize !== null ? '· ' + bv.byteSize + ' B' : '' }}
+          </span>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              (click)="copy(bv.base64)"
+              class="flex items-center gap-1 transition-colors"
+              [class]="copied() ? 'text-green-600' : 'text-primary hover:underline'"
+            >
+              <mat-icon class="text-[16px]">{{ copied() ? checkIcon : copyIcon }}</mat-icon>
+              {{ copied() ? 'Copied' : 'Copy' }}
+            </button>
+            <button type="button" (click)="base64View.set(null)" class="text-secondary hover:text-on-surface">
+              <mat-icon class="text-[18px]">{{ closeIcon }}</mat-icon>
+            </button>
+          </div>
+        </div>
+        <code class="block max-h-48 overflow-auto whitespace-pre-wrap break-all p-3 text-code-sm font-code-sm text-on-surface">{{ bv.base64 }}</code>
+      </div>
+    }
+  </div>
+}
+
+<!-- YMME sort popover (fixed so the table's overflow can't clip it; anchored under the header button) -->
+@if (sortMenuOpen()) {
+  <button type="button" aria-label="Close" class="fixed inset-0 z-40 cursor-default" (click)="sortMenuOpen.set(false)"></button>
+  <div
+    class="fixed z-50 w-52 overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest py-1 shadow-lg"
+    [style.left.px]="sortMenuPos().x"
+    [style.top.px]="sortMenuPos().y"
+  >
+    <p class="px-3 py-1 text-label-xs font-label-xs uppercase text-secondary">Sort by</p>
+    @for (f of sortFields; track f.field) {
+      <button
+        type="button"
+        (click)="applySort(f.field)"
+        class="flex w-full items-center justify-between px-3 py-2 text-left text-body-sm transition-colors hover:bg-surface-container-low"
+        [class]="sortBy() === f.field ? 'text-primary' : 'text-on-surface'"
+      >
+        {{ f.label }}
+        <mat-icon class="text-[16px]" [class]="sortBy() === f.field ? 'text-primary' : 'text-secondary'">
+          {{ sortBy() === f.field ? (sortDir() === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more' }}
+        </mat-icon>
+      </button>
+    }
+    @if (sortBy() !== null) {
+      <span class="my-1 block h-px bg-outline-variant"></span>
+      <button
+        type="button"
+        (click)="clearSort()"
+        class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-sm text-secondary transition-colors hover:bg-surface-container-low"
+      >
+        <mat-icon class="text-[16px]">{{ closeIcon }}</mat-icon>
+        Clear sort
+      </button>
+    }
+  </div>
+}
+
+<!-- Payload Generator modal -->
+@if (showGeneratorModal()) {
+  <app-payload-generator-modal (closed)="showGeneratorModal.set(false)" />
+}

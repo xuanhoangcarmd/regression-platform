@@ -1,0 +1,485 @@
+@if (loading()) {
+  <!-- Skeleton mirroring the page layout: header · tabs · score + stat cards · summary panels -->
+  <div class="animate-pulse">
+    <!-- Header -->
+    <div class="mb-6">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex items-center gap-3">
+          <div class="h-8 w-32 rounded-lg bg-surface-container-high"></div>
+          <div class="h-6 w-24 rounded-full bg-surface-container-high"></div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          @for (i of skeletonActions; track i) {
+            <div class="h-8 w-24 rounded-lg bg-surface-container-high"></div>
+          }
+        </div>
+      </div>
+      <div class="mt-3 h-4 w-80 rounded bg-surface-container-high"></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-6 flex gap-4 border-b border-outline-variant pb-3">
+      @for (i of skeletonTabs; track i) {
+        <div class="h-5 w-24 rounded bg-surface-container-high"></div>
+      }
+    </div>
+
+    <!-- Score + result stat cards -->
+    <div class="mb-6 flex flex-col gap-3 xl:flex-row">
+      <div class="flex shrink-0 items-center gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest px-5 py-4 shadow-sm xl:w-64">
+        <div class="h-16 w-16 shrink-0 rounded-full bg-surface-container-high"></div>
+        <div class="flex-1 space-y-2">
+          <div class="h-3 w-24 rounded bg-surface-container-high"></div>
+          <div class="h-6 w-16 rounded bg-surface-container-high"></div>
+        </div>
+      </div>
+      <div class="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        @for (i of skeletonCards; track i) {
+          <div class="flex items-start gap-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-3 shadow-sm">
+            <div class="h-8 w-8 shrink-0 rounded-lg bg-surface-container-high"></div>
+            <div class="min-w-0 flex-1 space-y-1.5">
+              <div class="h-3 w-14 rounded bg-surface-container-high"></div>
+              <div class="h-5 w-10 rounded bg-surface-container-high"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Summary panels -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
+        <div class="h-5 w-28 rounded bg-surface-container-high"></div>
+        <div class="mt-4 space-y-2.5">
+          @for (i of skeletonRows; track i) {
+            <div class="h-4 w-full rounded bg-surface-container-high"></div>
+          }
+        </div>
+      </div>
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
+        <div class="h-5 w-32 rounded bg-surface-container-high"></div>
+        <div class="mt-4 space-y-2.5">
+          @for (i of skeletonRows; track i) {
+            <div class="h-4 w-full rounded bg-surface-container-high"></div>
+          }
+        </div>
+      </div>
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
+        <div class="h-5 w-36 rounded bg-surface-container-high"></div>
+        <div class="mx-auto mt-4 h-28 w-28 rounded-full bg-surface-container-high"></div>
+      </div>
+    </div>
+  </div>
+} @else if (errorMessage()) {
+  <p class="text-body-sm text-error">{{ errorMessage() }}</p>
+} @else if (reportData()) {
+  @if (reportData(); as report) {
+  <!-- Header -->
+  <div class="mb-6">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div class="flex items-center gap-3">
+        <h1 class="font-headline-md text-headline-md text-on-surface">{{ displayReportId(report.id) }}</h1>
+        <app-status-badge [label]="report.status" [tone]="statusTone(report.status)" />
+      </div>
+
+      <!-- Action buttons (AI Summary jumps to the AI tab; the rest are later-phase stubs) -->
+      <div class="flex flex-wrap items-center gap-2">
+        @if (exporting()) {
+          <span class="flex items-center gap-1.5 text-body-sm text-primary">
+            <mat-icon class="animate-spin text-[16px]">progress_activity</mat-icon>
+            Generating file…
+          </span>
+        }
+        <app-button variant="secondary" size="sm" [icon]="aiIcon" (click)="activeTab.set('ai')">AI Summary</app-button>
+        <app-button variant="secondary" size="sm" [icon]="pdfIcon" (click)="openPreviewPdf()">Preview PDF</app-button>
+        <app-button variant="secondary" size="sm" [icon]="exportIcon" (click)="exportOpen.set(true)">Export</app-button>
+        <app-button variant="secondary" size="sm" [icon]="emailIcon" (click)="emailOpen.set(true)">Send Mail</app-button>
+        <app-button variant="secondary" size="sm" [icon]="shareIcon" [disabled]="true" [title]="plannedHint">Share</app-button>
+        <button
+          type="button"
+          [title]="plannedHint"
+          disabled
+          class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest text-secondary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <mat-icon class="text-[18px]">{{ moreIcon }}</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Runs + link back to the source compare -->
+    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-on-surface">
+      <span class="flex items-center gap-2">
+        <span class="font-medium">{{ report.runATitle }}</span>
+        <mat-icon class="text-[16px] text-secondary">{{ compareIcon }}</mat-icon>
+        <span class="font-medium">{{ report.runBTitle }}</span>
+      </span>
+      <button type="button" (click)="viewCompare()" class="inline-flex items-center gap-1 text-primary hover:underline">
+        View Compare ({{ displayCompareId(report.compareJobId) }})
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="mb-6 flex gap-1 border-b border-outline-variant">
+    @for (tab of tabs; track tab.key) {
+      <button
+        type="button"
+        (click)="activeTab.set(tab.key)"
+        [class.border-primary]="activeTab() === tab.key"
+        [class.bg-surface-container]="activeTab() === tab.key"
+        [class.font-semibold]="activeTab() === tab.key"
+        [class.text-on-surface]="activeTab() === tab.key"
+        [class.border-transparent]="activeTab() !== tab.key"
+        [class.text-secondary]="activeTab() !== tab.key"
+        class="-mb-px flex items-center gap-1.5 rounded-t-lg border-b-2 px-4 py-2 text-body-sm font-medium transition-colors hover:text-on-surface"
+      >
+        @if (tab.icon) {
+          <mat-icon class="text-[16px] text-indigo-500" [class.opacity-80]="activeTab() !== tab.key">{{ tab.icon }}</mat-icon>
+          <span
+            class="bg-gradient-to-r from-indigo-500 to-fuchsia-500 bg-clip-text font-semibold text-transparent"
+            [class.opacity-80]="activeTab() !== tab.key"
+          >
+            {{ tab.label }}
+          </span>
+        } @else {
+          {{ tab.label }}
+        }
+      </button>
+    }
+  </div>
+
+  @if (activeTab() === 'summary') {
+    <!-- Score + result stat cards -->
+    <div class="mb-6 flex flex-col gap-3 xl:flex-row">
+      <!-- Regression score -->
+      <div class="flex shrink-0 items-center gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest px-5 py-4 shadow-sm xl:w-64">
+        <div class="relative h-16 w-16 shrink-0 rounded-full" [style.background]="scoreGradient()">
+          <div class="absolute inset-[8px] rounded-full bg-surface-container-lowest"></div>
+        </div>
+        <div>
+          <p class="text-label-xs font-label-xs uppercase text-secondary">Regression Score</p>
+          <p class="font-headline-sm text-headline-sm font-semibold" [class]="scoreBand().textClass">
+            {{ report.regressionScore | number: '1.0-1' }}%
+          </p>
+          <p class="text-label-xs font-label-xs" [class]="scoreBand().textClass">{{ scoreBand().label }}</p>
+        </div>
+      </div>
+
+      <!-- Result breakdown cards -->
+      <div class="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        @for (card of statCards(); track card.label) {
+          <div class="flex items-start gap-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-3 shadow-sm">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" [class]="card.iconWrap">
+              <mat-icon class="text-[18px]">{{ card.icon }}</mat-icon>
+            </span>
+            <div class="min-w-0">
+              <p class="truncate text-label-xs font-label-xs uppercase text-secondary">{{ card.label }}</p>
+              <p class="text-title-sm font-title-sm text-on-surface">{{ card.value | number }}</p>
+              @if (card.showPercent) {
+                <p class="text-label-xs font-label-xs font-medium" [class]="card.percentClass">{{ statPercent(card.value) }}%</p>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Overview + Changes over time + Distribution -->
+    <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <!-- Overview -->
+      <div class="flex flex-col rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
+        <h2 class="font-title-sm text-title-sm text-on-surface">Overview</h2>
+        <dl class="mt-3 flex flex-col gap-2 text-body-sm">
+          <div class="flex justify-between gap-3">
+            <dt class="text-secondary">Compared</dt>
+            <dd class="truncate text-right text-on-surface">{{ report.runATitle }} → {{ report.runBTitle }}</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-secondary">Project</dt>
+            <dd class="text-on-surface">{{ projectName() }}</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-secondary">Generated At</dt>
+            <dd class="text-on-surface">{{ report.generatedDate | date: 'dd/MM/yyyy HH:mm' }}</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-secondary">Total Requests</dt>
+            <dd class="text-on-surface">{{ report.totalRequest | number }}</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-secondary">Total APIs</dt>
+            <dd class="text-on-surface">{{ report.totalApis | number }}</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-secondary">Breaking APIs</dt>
+            <dd [class]="report.breakingApiCount > 0 ? 'font-medium text-red-700' : 'text-on-surface'">
+              {{ report.breakingApiCount | number }}
+            </dd>
+          </div>
+        </dl>
+        <button
+          type="button"
+          (click)="viewCompare()"
+          class="mt-auto flex w-full items-center justify-center gap-1 rounded border border-solid border-outline-variant bg-surface-container-lowest px-4 py-2 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low"
+        >
+          View Compare <span class="text-primary">({{ displayCompareId(report.compareJobId) }})</span>
+        </button>
+      </div>
+
+      <!-- Changes over time (Response Time) -->
+      <div class="flex flex-col rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
+        <h2 class="font-title-sm text-title-sm text-on-surface">
+          Changes over time <span class="text-body-sm font-normal text-secondary">(Response Time)</span>
+        </h2>
+        <div class="mt-1 flex flex-1 flex-col">
+          <app-report-response-trend [reportId]="report.id" />
+        </div>
+      </div>
+
+      <!-- Change distribution donut -->
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
+        <h2 class="font-title-sm text-title-sm text-on-surface">Change Distribution</h2>
+        @if (distribution(); as dist) {
+          <div class="mt-4 flex items-center gap-4">
+            <div class="relative h-28 w-28 shrink-0 rounded-full" [style.background]="dist.gradient">
+              <div class="absolute inset-[12px] flex flex-col items-center justify-center rounded-full bg-surface-container-lowest">
+                <span class="font-title-sm text-title-sm text-on-surface">{{ dist.total | number }}</span>
+                <span class="text-label-xs font-label-xs uppercase text-secondary">Total</span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5 text-body-sm">
+              @for (slice of dist.slices; track slice.label) {
+                @if (slice.count > 0) {
+                  <div class="flex items-center gap-2">
+                    <span class="h-2.5 w-2.5 rounded-full" [style.background]="slice.color"></span>
+                    <span class="text-on-surface">{{ slice.label }}</span>
+                    <span class="ml-auto font-medium" [class]="slice.textClass">{{ slice.count | number }} ({{ slice.percent }}%)</span>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        } @else {
+          <p class="mt-3 text-body-sm text-secondary">No changes — Run B is identical to Run A.</p>
+        }
+      </div>
+    </div>
+
+    <!-- Top APIs + breaking changes -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <!-- Top APIs by change % -->
+    <div class="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm lg:col-span-2">
+      <div class="border-b border-outline-variant p-4">
+        <h2 class="font-title-sm text-title-sm text-on-surface">Top 5 APIs by Change %</h2>
+        <p class="text-body-sm text-secondary">APIs with the largest share of changed responses.</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-body-sm">
+          <thead class="border-b border-outline-variant text-label-xs font-label-xs uppercase text-secondary">
+            <tr>
+              <th class="px-4 py-2">API</th>
+              <th class="px-4 py-2 text-right">Requests</th>
+              <th class="px-4 py-2 text-right">Change %</th>
+              <th class="px-4 py-2 text-right">Changed</th>
+              <th class="px-4 py-2 text-right">Added</th>
+              <th class="px-4 py-2 text-right">Removed</th>
+              <th class="px-4 py-2 text-center">Risk</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant">
+            @for (row of topApis(); track row.api.apiId) {
+              <tr>
+                <td class="px-4 py-2">
+                  <div class="flex items-center gap-2">
+                    <span class="rounded bg-surface-container-high px-1.5 py-0.5 text-label-xs font-label-xs font-medium text-on-surface">{{ row.api.method }}</span>
+                    <span class="font-medium text-on-surface">{{ row.api.apiName }}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-2 text-right text-on-surface">{{ row.api.requestCount | number }}</td>
+                <td class="px-4 py-2 text-right font-medium text-on-surface">{{ row.changePercent }}%</td>
+                <td class="px-4 py-2 text-right text-amber-600">{{ row.api.changedCount | number }}</td>
+                <td class="px-4 py-2 text-right text-green-600">{{ row.api.addedCount | number }}</td>
+                <td class="px-4 py-2 text-right text-red-700">{{ row.api.removedCount | number }}</td>
+                <td class="px-4 py-2 text-center">
+                  <span
+                    class="inline-block rounded-full px-2 py-0.5 text-label-xs font-label-xs font-medium"
+                    [class]="riskClass(row.risk)"
+                  >
+                    {{ row.risk }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="px-4 py-6 text-center text-body-sm text-secondary">No comparison data.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- APIs with breaking changes -->
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
+      <div class="flex items-center gap-3 border-b border-outline-variant pb-3">
+        <mat-icon class="text-[28px]" [class]="report.breakingApiCount > 0 ? 'text-red-600' : 'text-secondary'">{{ warningIcon }}</mat-icon>
+        <div>
+          <p class="text-title-md font-title-md text-on-surface">{{ report.breakingApiCount | number }}</p>
+          <p class="text-body-sm text-secondary">APIs have breaking changes</p>
+        </div>
+      </div>
+      @if (breakingApis().length) {
+        <ul class="mt-3 flex flex-col gap-2 text-body-sm">
+          @for (api of breakingApis(); track api.apiId) {
+            <li class="flex items-center justify-between gap-3">
+              <span class="truncate text-on-surface" [title]="api.apiName">{{ api.apiName }}</span>
+              <span class="shrink-0 whitespace-nowrap rounded-full bg-red-50 px-2 py-0.5 text-label-xs font-label-xs font-medium text-red-700">
+                {{ api.breakingCount | number }} breaking {{ api.breakingCount === 1 ? 'change' : 'changes' }}
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="mt-3 text-body-sm text-secondary">No breaking changes detected — safe to approve.</p>
+      }
+    </div>
+    </div>
+  } @else if (activeTab() === 'distribution') {
+    <!-- Response-time charts (Run A vs Run B), built from the two runs' response data -->
+    <div class="mb-6">
+      <app-report-performance-charts [reportId]="report.id" />
+    </div>
+
+    <!-- Latency histogram + per-API performance table (dimensions not shown on other tabs) -->
+    <div class="mb-6">
+      <app-report-performance-stats [reportId]="report.id" />
+    </div>
+
+    <!-- Per-API result distribution (stacked bars) -->
+    <div class="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
+      <div class="flex flex-col gap-3 border-b border-outline-variant p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="font-title-sm text-title-sm text-on-surface">Distribution by API</h2>
+          <p class="text-body-sm text-secondary">Result mix per API, most-changed first.</p>
+        </div>
+        <!-- Legend -->
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-label-xs font-label-xs text-secondary">
+          @for (item of distributionLegend; track item.label) {
+            <span class="flex items-center gap-1.5">
+              <span class="h-2.5 w-2.5 rounded-full" [style.background]="item.color"></span>
+              {{ item.label }}
+            </span>
+          }
+        </div>
+      </div>
+
+      <ul class="divide-y divide-outline-variant">
+        @for (row of apiDistribution(); track row.api.apiId) {
+          <li class="p-4">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <div class="flex min-w-0 items-center gap-2">
+                <span class="shrink-0 rounded bg-surface-container-high px-1.5 py-0.5 text-label-xs font-label-xs font-medium text-on-surface">{{ row.api.method }}</span>
+                <span class="truncate font-medium text-on-surface" [title]="row.api.apiName">{{ row.api.apiName }}</span>
+              </div>
+              <div class="flex shrink-0 items-center gap-3 text-body-sm">
+                <span class="text-secondary">{{ row.total | number }} req</span>
+                <span class="font-medium text-on-surface">{{ row.changePercent }}% changed</span>
+              </div>
+            </div>
+
+            <!-- Stacked bar -->
+            <div class="flex h-3 w-full overflow-hidden rounded-full bg-surface-container-high">
+              @for (segment of row.segments; track segment.label) {
+                <span
+                  class="h-full"
+                  [style.width.%]="segment.percent"
+                  [style.background]="segment.color"
+                  [title]="segment.label + ': ' + segment.count + ' (' + (segment.percent | number: '1.0-0') + '%)'"
+                ></span>
+              }
+            </div>
+
+            <!-- Segment counts -->
+            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-label-xs font-label-xs text-secondary">
+              @for (segment of row.segments; track segment.label) {
+                <span class="flex items-center gap-1.5">
+                  <span class="h-2 w-2 rounded-full" [style.background]="segment.color"></span>
+                  {{ segment.label }} <span class="font-medium text-on-surface">{{ segment.count | number }}</span>
+                </span>
+              }
+            </div>
+          </li>
+        } @empty {
+          <li class="px-4 py-16 text-center text-body-sm text-secondary">No comparison data to distribute.</li>
+        }
+      </ul>
+    </div>
+  } @else if (activeTab() === 'ai') {
+    <app-report-ai-analysis [report]="report" />
+  } @else {
+    <!-- Activity — later phase -->
+    <div class="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest px-6 py-16 text-center shadow-sm">
+      <mat-icon class="text-[40px] text-secondary">{{ scheduleIcon }}</mat-icon>
+      <h2 class="font-title-sm text-title-sm text-on-surface">Coming soon</h2>
+      <p class="max-w-md text-body-sm text-secondary">
+        The report activity timeline (generation, exports, emails, shares) is planned for a later phase.
+      </p>
+    </div>
+  }
+
+  <!-- Export modal -->
+  @if (exportOpen()) {
+    <app-report-export-modal
+      [report]="report"
+      [projectName]="projectName()"
+      (submitted)="onExport($event)"
+      (closed)="exportOpen.set(false)"
+    />
+  }
+
+  <!-- Email modal (UI only — sending not wired up yet) -->
+  @if (emailOpen()) {
+    <app-report-email-modal [report]="report" [projectName]="projectName()" (closed)="emailOpen.set(false)" />
+  }
+
+  <!-- Preview PDF modal -->
+  @if (previewPdfOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button type="button" aria-label="Close" class="fixed inset-0 bg-slate-900/50" (click)="closePreviewPdf()"></button>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Preview PDF"
+        class="relative z-10 flex h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-surface-container-lowest shadow-xl"
+      >
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-outline-variant px-5 py-3">
+          <h2 class="text-title-sm font-title-sm font-semibold text-on-surface">Preview PDF — {{ displayReportId(report.id) }}</h2>
+          <button
+            type="button"
+            (click)="closePreviewPdf()"
+            aria-label="Close"
+            class="text-secondary transition-colors hover:text-on-surface"
+          >
+            <mat-icon class="text-[20px]">{{ closeIcon }}</mat-icon>
+          </button>
+        </div>
+
+        <!-- PDF viewer -->
+        <div class="flex-1 overflow-hidden bg-slate-200">
+          @if (pdfSafeUrl(); as url) {
+            <iframe #pdfFrame [src]="url" class="h-full w-full border-0" title="Report PDF preview"></iframe>
+          }
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end gap-3 border-t border-outline-variant px-5 py-3">
+          <app-button variant="secondary" (click)="closePreviewPdf()">Close</app-button>
+          <app-button variant="secondary" [icon]="pdfIcon" (click)="printPdf()">Print</app-button>
+          <app-button [icon]="exportIcon" (click)="downloadPdf()">Download PDF</app-button>
+        </div>
+      </div>
+    </div>
+  }
+  }
+}

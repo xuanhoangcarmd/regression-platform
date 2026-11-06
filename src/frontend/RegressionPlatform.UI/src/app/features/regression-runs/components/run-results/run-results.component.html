@@ -1,0 +1,140 @@
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <!-- Left: request list -->
+  <div
+    class="flex max-h-[640px] flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm lg:col-span-1"
+  >
+    <div class="flex flex-col gap-2 border-b border-outline-variant p-3">
+      <h2 class="text-body-sm font-medium text-on-surface">Requests ({{ results().length }})</h2>
+      <div class="flex items-center gap-2">
+        <div class="flex-1"><app-input [formControl]="searchControl" [icon]="searchIcon" placeholder="Search request / endpoint..." /></div>
+        <div class="w-30 shrink-0"><app-select [formControl]="statusControl" [options]="statusOptions" [fullWidth]="true" /></div>
+      </div>
+      @if (apis().length > 1) {
+        <app-select [formControl]="apiControl" [options]="apiOptions()" [fullWidth]="true" />
+      }
+    </div>
+    <div class="flex-1 overflow-y-auto">
+      @if (listLoading()) {
+        <div class="flex items-center justify-center gap-2 py-10 text-body-sm text-secondary">
+          <mat-icon class="animate-spin text-[20px] text-primary">progress_activity</mat-icon>
+          Loading…
+        </div>
+      } @else {
+      @for (result of results(); track result.requestId) {
+        <button
+          type="button"
+          (click)="select(result.requestId)"
+          [class.bg-surface-container]="result.requestId === selectedId()"
+          [class.border-l-primary]="result.requestId === selectedId()"
+          [class.border-l-transparent]="result.requestId !== selectedId()"
+          class="flex w-full flex-col gap-1 border-b border-l-2 border-outline-variant px-4 py-3 text-left transition-colors hover:bg-surface-container-low"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span class="truncate text-body-sm font-medium text-on-surface">{{ result.title }}</span>
+            <app-status-badge [label]="resultStatusLabel(result.status)" [tone]="statusTone(result.status)" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="rounded bg-surface-container-high px-1.5 py-0.5 text-label-xs font-label-xs font-medium text-on-surface">{{ result.method }}</span>
+            <span class="truncate text-code-sm font-code-sm text-secondary" [title]="result.endpoint">{{ result.endpoint }}</span>
+          </div>
+        </button>
+      } @empty {
+        <p class="px-4 py-6 text-center text-body-sm text-secondary">No matching requests.</p>
+      }
+      }
+    </div>
+  </div>
+
+  <!-- Right: selected result detail -->
+  <div
+    class="flex max-h-[640px] flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm lg:col-span-2"
+  >
+    @if (detail(); as result) {
+      <!-- Detail header -->
+      <div class="flex flex-col gap-3 border-b border-outline-variant p-4">
+        <div class="flex items-center gap-2">
+          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-xs font-label-xs font-medium text-on-surface">{{ result.method }}</span>
+          <span class="text-code-sm font-code-sm text-on-surface">{{ result.endpoint }}</span>
+          <app-status-badge class="ml-auto" [label]="resultStatusLabel(result.status)" [tone]="statusTone(result.status)" />
+          <button
+            type="button"
+            [disabled]="rerunning()"
+            (click)="rerunRequest()"
+            [title]="rerunning() ? 'Re-running…' : 'Re-run this request and update its result'"
+            class="flex items-center gap-1 rounded-md px-2 py-1 text-body-sm text-secondary transition-colors hover:bg-surface-container-low hover:text-primary disabled:opacity-50"
+          >
+            <mat-icon class="text-[16px]" [class.animate-spin]="rerunning()">{{ rerunIcon }}</mat-icon>
+            {{ rerunning() ? 'Re-running…' : 'Re-run' }}
+          </button>
+        </div>
+        <div class="flex flex-wrap gap-x-6 gap-y-1 text-body-sm">
+          <div><span class="text-secondary">Status: </span><span class="font-medium text-on-surface">{{ result.statusCode ?? '—' }}</span></div>
+          <div><span class="text-secondary">Time: </span><span class="font-medium text-on-surface">{{ formatMs(result.durationMs) }}</span></div>
+          <div><span class="text-secondary">Size: </span><span class="font-medium text-on-surface">{{ formatSize(result.responseSize) }}</span></div>
+        </div>
+      </div>
+
+      <!-- Error banner (failed-to-connect) -->
+      @if (result.errorMessage) {
+        <div class="border-b border-outline-variant bg-error-container px-4 py-3">
+          <p class="text-body-sm font-medium text-error">{{ result.errorMessage }}</p>
+        </div>
+      }
+
+      <!-- Sub-tabs -->
+      <div class="flex items-center justify-between gap-2 border-b border-outline-variant px-4">
+        <div class="flex gap-1">
+          @for (tab of subTabs; track tab.key) {
+            <button
+              type="button"
+              (click)="activeSubTab.set(tab.key)"
+              [class.border-primary]="activeSubTab() === tab.key"
+              [class.text-primary]="activeSubTab() === tab.key"
+              [class.border-transparent]="activeSubTab() !== tab.key"
+              [class.text-secondary]="activeSubTab() !== tab.key"
+              class="-mb-px border-b-2 px-3 py-2 text-body-sm font-medium transition-colors hover:text-primary"
+            >
+              {{ tab.label }}
+            </button>
+          }
+        </div>
+        <button
+          type="button"
+          (click)="copy()"
+          class="flex items-center gap-1 rounded-md px-2 py-1 text-body-sm text-secondary transition-colors hover:bg-surface-container-low hover:text-primary"
+        >
+          <mat-icon class="text-[16px]">{{ copyIcon }}</mat-icon>
+          {{ copied() ? 'Copied' : 'Copy' }}
+        </button>
+      </div>
+
+      <!-- Code panel (numbered lines) -->
+      <div class="flex-1 overflow-auto bg-surface-container-low">
+        <div class="flex min-h-full min-w-full bg-white">
+          <!-- Line-number gutter (stays put while scrolling horizontally) -->
+          <div
+            class="sticky left-0 z-10 select-none border-r border-outline-variant bg-surface-container px-3 py-4 text-right text-code-sm font-code-sm text-secondary"
+          >
+            @for (line of contentLines(); track $index) {
+              <div class="leading-5">{{ $index + 1 }}</div>
+            }
+          </div>
+          <pre
+            class="m-0 flex-1 whitespace-pre px-4 py-4 text-code-sm font-code-sm leading-5 text-on-surface"
+            [innerHTML]="highlightedHtml()"
+          ></pre>
+        </div>
+      </div>
+    } @else {
+      <!-- No selection / loading / empty -->
+      <div class="flex flex-1 items-center justify-center gap-2 p-10 text-body-sm text-secondary">
+        @if (detailLoading()) {
+          <mat-icon class="animate-spin text-[20px] text-primary">progress_activity</mat-icon>
+          Loading details…
+        } @else {
+          Select a request to view details.
+        }
+      </div>
+    }
+  </div>
+</div>

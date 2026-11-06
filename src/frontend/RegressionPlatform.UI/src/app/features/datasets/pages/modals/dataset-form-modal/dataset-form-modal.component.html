@@ -1,0 +1,33 @@
+<app-modal
+  type="update"
+  size="md"
+  [title]="isEdit ? 'Edit Dataset' : 'New Dataset'"
+  [confirmLabel]="isEdit ? 'Save Changes' : 'Create Dataset'"
+  [confirmDisabled]="form.invalid"
+  [confirmLoading]="loading()"
+  (confirm)="save()"
+  (cancelled)="closed.emit()"
+>
+  <form [formGroup]="form" class="flex flex-col gap-4">
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Dataset Name <span class="text-error">*</span></span>
+      <app-input
+        formControlName="name"
+        placeholder="e.g. Mobile Regression"
+        [error]="controlErrorMessage(form.controls.name, 'Name')"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Description</span>
+      <app-textarea formControlName="description" [rows]="3" placeholder="What this dataset covers..." />
+    </div>
+
+    @if (isEdit) {
+      <label class="flex cursor-pointer items-center gap-2">
+        <input type="checkbox" formControlName="isActive" class="h-4 w-4 accent-primary-container" />
+        <span class="text-body-sm text-on-surface">Active (inactive datasets are hidden when creating a run)</span>
+      </label>
+    }
+  </form>
+</app-modal>

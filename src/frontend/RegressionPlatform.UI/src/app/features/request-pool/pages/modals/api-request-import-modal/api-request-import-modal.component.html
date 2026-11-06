@@ -1,0 +1,93 @@
+<app-modal
+  type="update"
+  size="lg"
+  title="Import Requests from Excel"
+  confirmLabel="Import"
+  [confirmDisabled]="apiControl.invalid || file() === null || result() !== null"
+  [confirmLoading]="loading()"
+  (confirm)="submit()"
+  (cancelled)="closed.emit()"
+>
+  <div class="flex flex-col gap-4">
+    <!-- API -->
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">API <span class="text-error">*</span></span>
+      <app-select
+        [formControl]="apiControl"
+        [options]="apiOptions()"
+        placeholder="-- Select API --"
+        [error]="controlErrorMessage(apiControl, 'API')"
+      />
+    </div>
+
+    <!-- File -->
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Excel File <span class="text-error">*</span></span>
+      <input
+        type="file"
+        accept=".xlsx"
+        (change)="onFileSelected($event)"
+        class="block w-full cursor-pointer rounded-lg border border-outline-variant bg-surface-container-lowest text-body-sm text-on-surface file:mr-3 file:cursor-pointer file:border-0 file:bg-surface-container-high file:px-4 file:py-2.5 file:text-body-sm file:font-medium file:text-on-surface hover:file:bg-surface-container-highest"
+      />
+    </div>
+
+    <!-- Format help + example -->
+    <div class="flex flex-col gap-2 rounded-lg border border-outline-variant bg-surface-container-low p-3">
+      <p class="text-body-sm text-secondary">
+        Each <span class="font-medium text-on-surface">row</span> is a request. The file
+        <span class="font-medium text-on-surface">must</span> include a
+        <span class="text-code-sm font-code-sm">Title</span> column as the request title; the remaining columns are fields in the body.
+        The system automatically converts them into a <span class="font-medium text-on-surface">query string</span> (if the API is GET) or a
+        <span class="font-medium text-on-surface">JSON request body</span> (other methods). Rows missing a
+        <span class="text-code-sm font-code-sm">Title</span> will be skipped. An optional
+        <span class="text-code-sm font-code-sm">Description</span> column is stored as the request's description
+        (not sent in the body).
+      </p>
+      <p class="text-body-sm text-secondary">
+        Nested bodies: use a <span class="font-medium text-on-surface">dotted column name</span> to nest —
+        <span class="text-code-sm font-code-sm">VehicleBuffersRequest.Vin</span> becomes
+        <span class="text-code-sm font-code-sm">{{ '{' }}"VehicleBuffersRequest":{{ '{' }}"Vin":…{{ '}}' }}</span>;
+        a cell containing <span class="font-medium text-on-surface">JSON text</span> (starting with
+        <span class="text-code-sm font-code-sm">{{ '{' }}</span> or <span class="text-code-sm font-code-sm">[</span>)
+        is embedded as a real object/array — e.g. put
+        <span class="text-code-sm font-code-sm">["…","…"]</span> in an
+        <span class="text-code-sm font-code-sm">OemModuleRaw</span> column for an array of strings.
+      </p>
+
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left text-code-sm font-code-sm">
+          <thead>
+            <tr>
+              @for (column of exampleColumns; track column) {
+                <th class="border border-outline-variant bg-surface-container-high px-3 py-1.5 font-medium text-on-surface">
+                  {{ column }}@if (column === 'Title') {<span class="text-error">&nbsp;*</span>}
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of exampleRows; track $index) {
+              <tr>
+                @for (cell of row; track $index) {
+                  <td class="border border-outline-variant px-3 py-1.5 text-secondary">{{ cell }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <p class="text-body-sm text-secondary">Importing…</p>
+    }
+    @if (result(); as r) {
+      <p class="text-body-sm font-medium text-green-700">
+        Created {{ r.imported }} request(s), skipped {{ r.skipped }} (out of {{ r.total }} rows).
+      </p>
+    }
+    @if (errorMessage()) {
+      <p class="text-body-sm text-error">{{ errorMessage() }}</p>
+    }
+  </div>
+</app-modal>

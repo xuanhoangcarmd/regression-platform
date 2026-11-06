@@ -1,0 +1,137 @@
+<app-modal
+  type="update"
+  size="lg"
+  [title]="(isEdit() ? 'Edit Run (' : 'Create Run (') + form.controls.runType.value + ')'"
+  [confirmLabel]="isEdit() ? 'Save Changes' : 'Create Run'"
+  [confirmDisabled]="isInvalid()"
+  (confirm)="save()"
+  (cancelled)="closed.emit()"
+>
+  <form [formGroup]="form" class="flex flex-col gap-4">
+    <p class="-mt-1 text-body-sm text-secondary">
+      {{ isEdit() ? 'Edit this run before it is started.' : 'Create a new run to execute the requests in a dataset.' }}
+    </p>
+
+    <!-- Dataset -->
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Dataset <span class="text-error">*</span></span>
+      <app-select
+        formControlName="datasetId"
+        [options]="datasetOptions()"
+        placeholder="-- Select dataset --"
+        [error]="controlErrorMessage(form.controls.datasetId, 'Dataset')"
+      />
+    </div>
+
+    <!-- Run Name + Run Type -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="flex flex-col gap-1.5">
+        <span class="text-body-sm font-medium text-on-surface">Run Name <span class="text-error">*</span></span>
+        <app-input
+          formControlName="title"
+          placeholder="e.g. Sprint 29 - 2024-06-27"
+          [error]="controlErrorMessage(form.controls.title, 'Run Name')"
+        />
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <span class="text-body-sm font-medium text-on-surface">Run Type</span>
+        <app-select formControlName="runType" [options]="runTypeOptions" />
+      </div>
+    </div>
+
+    <!-- Environment + Request limit per API -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="flex flex-col gap-1.5">
+        <span class="text-body-sm font-medium text-on-surface">Environment</span>
+        <app-select formControlName="environment" [options]="environmentOptions" />
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <span class="text-body-sm font-medium text-on-surface">Request limit / API</span>
+        <app-input
+          formControlName="requestLimit"
+          type="number"
+          placeholder="Leave empty = run all"
+          [error]="controlErrorMessage(form.controls.requestLimit, 'Limit')"
+        />
+        <p class="text-body-sm text-secondary">Each API runs at most this many requests. Leave empty to run all.</p>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="flex flex-col gap-1.5">
+      <span class="text-body-sm font-medium text-on-surface">Description</span>
+      <app-textarea formControlName="description" [rows]="3" placeholder="Notes for this run..." />
+    </div>
+
+    <!-- Select APIs to run (within the chosen dataset) -->
+    <div class="flex flex-col gap-2 border-t border-outline-variant pt-4">
+      <span class="text-body-sm font-semibold text-on-surface">Select APIs to run</span>
+
+      @if (!form.controls.datasetId.value) {
+        <p class="text-body-sm text-secondary">Select a dataset first to choose its APIs.</p>
+      }
+
+      <label class="flex cursor-pointer items-center gap-2">
+        <input type="radio" formControlName="apiScope" value="all" class="h-4 w-4 accent-primary-container" />
+        <span class="text-body-sm text-on-surface">All APIs ({{ apiOptions().length }})</span>
+      </label>
+
+      <label class="flex cursor-pointer items-center gap-2">
+        <input type="radio" formControlName="apiScope" value="specific" class="h-4 w-4 accent-primary-container" />
+        <span class="text-body-sm text-on-surface">Select specific APIs</span>
+      </label>
+
+      @if (form.controls.apiScope.value === 'specific') {
+        <div class="mt-1 max-h-40 overflow-y-auto rounded-lg border border-outline-variant">
+          @for (option of apiOptions(); track option.value) {
+            <label
+              class="flex cursor-pointer items-center gap-3 border-b border-outline-variant px-3 py-2 last:border-b-0 hover:bg-surface-container-low"
+            >
+              <input
+                type="checkbox"
+                class="h-4 w-4 accent-primary-container"
+                [checked]="isApiSelected(apiId(option))"
+                (change)="toggleApi(apiId(option))"
+              />
+              <span class="text-body-sm text-on-surface">{{ option.label }}</span>
+            </label>
+          } @empty {
+            <p class="px-3 py-2 text-body-sm text-secondary">No APIs in this dataset yet.</p>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Parallel execution -->
+    <div class="flex flex-col gap-3 border-t border-outline-variant pt-4">
+      <label class="flex cursor-pointer items-center gap-3">
+        <app-toggle formControlName="parallel" ariaLabel="Run in parallel" />
+        <span class="text-body-sm font-medium text-on-surface">Run in parallel</span>
+        <span class="text-label-xs font-label-xs text-secondary">Off = run requests one at a time (sequential).</span>
+      </label>
+
+      @if (form.controls.parallel.value) {
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="flex flex-col gap-1.5">
+            <span class="text-body-sm font-medium text-on-surface">Max parallel APIs</span>
+            <app-input formControlName="maxParallelApis" type="number" placeholder="e.g. 2" />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <span class="text-body-sm font-medium text-on-surface">Max parallel requests / API</span>
+            <app-input formControlName="maxParallelRequestsPerApi" type="number" placeholder="e.g. 5" />
+          </div>
+        </div>
+        @if (productExceeded()) {
+          <p class="text-body-sm text-error">
+            {{ parallelProduct() }} concurrent requests exceeds the limit — APIs × requests/API must be ≤ {{ maxParallelProduct }}.
+          </p>
+        } @else {
+          <p class="text-body-sm text-secondary">
+            Up to <span class="font-medium text-on-surface">{{ parallelProduct() }}</span> requests run at once
+            (APIs × requests/API). Max {{ maxParallelProduct }}.
+          </p>
+        }
+      }
+    </div>
+  </form>
+</app-modal>

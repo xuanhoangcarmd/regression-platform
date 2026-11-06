@@ -1,0 +1,110 @@
+// =============================================================================
+//  DESIGN TOKENS — SINGLE SOURCE OF TRUTH ("Technical Precision System")
+//  Palette/typography from docs/rules/angular/design-tokens.md (DESIGN.md).
+//  Edit values here; Tailwind (tailwind.config.js), global styles, and Angular
+//  Material all read these CSS custom properties via var(--rp-*).
+//
+//  Light theme = :root. Dark theme = :root[data-theme='dark'] (overrides only
+//  what changes). The sidebar rail is intentionally dark in BOTH themes, so it
+//  has dedicated tokens that are NOT overridden in dark mode.
+// =============================================================================
+
+:root {
+  // ----- Primary -----
+  --rp-primary: #0037b0;
+  --rp-on-primary: #ffffff;
+  --rp-primary-container: #1d4ed8;
+  --rp-on-primary-container: #cad3ff;
+  --rp-inverse-primary: #b7c4ff;
+
+  // ----- Secondary -----
+  --rp-secondary: #505f76;
+  --rp-on-secondary: #ffffff;
+  --rp-secondary-container: #d0e1fb;
+  --rp-on-secondary-container: #54647a;
+
+  // ----- Tertiary -----
+  --rp-tertiary: #7f2500;
+  --rp-on-tertiary: #ffffff;
+  --rp-tertiary-container: #a73400;
+  --rp-on-tertiary-container: #ffc9b7;
+
+  // ----- Error -----
+  --rp-error: #ba1a1a;
+  --rp-on-error: #ffffff;
+  --rp-error-container: #ffdad6;
+  --rp-on-error-container: #93000a;
+
+  // ----- Background / surfaces -----
+  --rp-background: #f8fafc; // cool gray app canvas (DESIGN.md elevation level 0)
+  --rp-on-background: #1a1b23;
+  --rp-surface: #faf8ff;
+  --rp-surface-dim: #d9d9e5;
+  --rp-surface-bright: #faf8ff;
+  --rp-surface-container-lowest: #ffffff;
+  --rp-surface-container-low: #f3f2fe;
+  --rp-surface-container: #ededf9;
+  --rp-surface-container-high: #e8e7f3;
+  --rp-surface-container-highest: #e2e1ed;
+  --rp-surface-variant: #e2e1ed;
+  --rp-on-surface: #1a1b23;
+  --rp-on-surface-variant: #434655;
+
+  // ----- Outline / misc -----
+  --rp-outline: #747686;
+  --rp-outline-variant: #e2e8f0; // softer divider/border (design level-1 border)
+  --rp-surface-tint: #2151da;
+  --rp-inverse-surface: #2e3039;
+  --rp-inverse-on-surface: #f0f0fb;
+
+  // ----- Sidebar rail (dark in BOTH themes — not overridden below) -----
+  --rp-sidebar: #2e3039;
+  --rp-sidebar-on: #ffffff;
+  --rp-sidebar-muted: rgba(255, 255, 255, 0.7);
+  --rp-sidebar-hover: rgba(255, 255, 255, 0.1);
+  --rp-sidebar-active: #0037b0;
+  --rp-sidebar-line: rgba(255, 255, 255, 0.1);
+
+  // ----- Typography families -----
+  --rp-font-display: 'Hanken Grotesk', 'Inter', system-ui, sans-serif;
+  --rp-font-body: 'Inter', system-ui, sans-serif;
+  --rp-font-code: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+// ----- DARK MODE — themed surfaces only (sidebar stays dark) -----
+:root[data-theme='dark'] {
+  --rp-primary: #b7c4ff;
+  --rp-on-primary: #002a78;
+  --rp-primary-container: #0039b5;
+  --rp-on-primary-container: #dce1ff;
+  --rp-inverse-primary: #0037b0;
+
+  --rp-secondary: #b7c8e1;
+  --rp-on-secondary: #21323f;
+  --rp-secondary-container: #38485d;
+  --rp-on-secondary-container: #d3e4fe;
+
+  --rp-error: #ffb4ab;
+  --rp-on-error: #690005;
+  --rp-error-container: #93000a;
+  --rp-on-error-container: #ffdad6;
+
+  --rp-background: #121318;
+  --rp-on-background: #e3e1e9;
+  --rp-surface: #121318;
+  --rp-surface-dim: #121318;
+  --rp-surface-bright: #38393f;
+  --rp-surface-container-lowest: #0d0e13;
+  --rp-surface-container-low: #1a1b21;
+  --rp-surface-container: #1e1f25;
+  --rp-surface-container-high: #292a2f;
+  --rp-surface-container-highest: #33343a;
+  --rp-surface-variant: #434655;
+  --rp-on-surface: #e3e1e9;
+  --rp-on-surface-variant: #c4c5d7;
+
+  --rp-outline: #8e8e9b;
+  --rp-outline-variant: #434655;
+  --rp-inverse-surface: #e3e1e9;
+  --rp-inverse-on-surface: #2e3039;
+}

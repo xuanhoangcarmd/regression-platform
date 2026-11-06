@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "database": {
+      "type": "sse",
+      "url": "https://dev-core-service.innova.com/mcp-innova-db/sse"
+    }
+  }
+}

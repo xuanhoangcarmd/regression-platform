@@ -1,0 +1,222 @@
+<div class="flex h-full min-h-0 flex-col">
+  <!-- Status code + reason -->
+  <div class="flex flex-col gap-2 border-b border-outline-variant p-3 sm:flex-row sm:items-end">
+    <label class="flex w-28 shrink-0 flex-col gap-1">
+      <span class="text-label-xs font-label-xs uppercase text-secondary">Status code</span>
+      <input
+        type="number"
+        class="w-full rounded-lg border bg-surface-container-lowest px-2 py-1.5 text-code-sm font-code-sm text-on-surface outline-none focus:border-primary"
+        [class.border-amber-400]="statusChanged()"
+        [class.border-outline-variant]="!statusChanged()"
+        [value]="state().statusCode ?? ''"
+        (change)="onStatusInput($any($event.target).value)"
+      />
+    </label>
+    <label class="flex min-w-0 flex-1 flex-col gap-1">
+      <span class="text-label-xs font-label-xs uppercase text-secondary">Reason / ticket</span>
+      <input
+        type="text"
+        maxlength="500"
+        class="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1.5 text-body-sm text-on-surface outline-none focus:border-primary"
+        placeholder="e.g. JIRA-123 — new rounding rule for BatteryVoltage"
+        [value]="state().reason"
+        (input)="onReasonInput($any($event.target).value)"
+      />
+    </label>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="flex flex-wrap items-center gap-2 border-b border-outline-variant px-3 py-2">
+    <div class="flex rounded-lg border border-outline-variant p-0.5">
+      @for (option of ['tree', 'code']; track option) {
+        <button
+          type="button"
+          (click)="setView($any(option))"
+          class="rounded-md px-3 py-1 text-body-sm capitalize transition-colors"
+          [class.bg-primary-container]="view() === option"
+          [class.text-on-primary-container]="view() === option"
+          [class.text-secondary]="view() !== option"
+        >
+          {{ option }}
+        </button>
+      }
+    </div>
+    <label class="flex cursor-pointer items-center gap-1.5 text-body-sm text-on-surface">
+      <input type="checkbox" class="h-4 w-4 accent-primary-container" [checked]="highlight()" (change)="highlight.set(!highlight())" />
+      Highlight changes vs original
+    </label>
+    @if (changeCount() > 0 || statusChanged()) {
+      <span class="rounded-full bg-amber-100 px-2 py-0.5 text-label-xs font-label-xs font-medium text-amber-800">
+        {{ changeCount() }} field change(s){{ statusChanged() ? ' · status' : '' }}
+      </span>
+    }
+    @if (view() === 'code') {
+      <button
+        type="button"
+        class="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-body-sm text-secondary hover:bg-surface-container hover:text-on-surface disabled:opacity-40"
+        [disabled]="!!parsed().error || !hasBody()"
+        (click)="format()"
+      >
+        <mat-icon class="text-[18px]">format_align_left</mat-icon> Format
+      </button>
+    }
+  </div>
+
+  <!-- Body -->
+  <div class="min-h-0 flex-1 overflow-auto">
+    @if (!hasBody()) {
+      <div class="flex flex-col items-center gap-3 p-8 text-center">
+        <mat-icon class="text-[36px] text-secondary">report</mat-icon>
+        <p class="text-body-sm text-on-surface">No response body was captured for this request.</p>
+        @if (state().detail.errorMessage) {
+          <p class="max-w-md text-code-sm font-code-sm text-error">{{ state().detail.errorMessage }}</p>
+        }
+        <button
+          type="button"
+          class="rounded-lg border border-outline-variant px-3 py-1.5 text-body-sm text-on-surface hover:bg-surface-container"
+          (click)="startEmptyBody()"
+        >
+          Write the expected response
+        </button>
+      </div>
+    } @else if (view() === 'code') {
+      <textarea
+        spellcheck="false"
+        class="block h-full min-h-[360px] w-full resize-none border-0 bg-surface-container-lowest p-3 text-code-sm font-code-sm text-on-surface outline-none"
+        [value]="codeText()"
+        (input)="onCodeInput($any($event.target).value)"
+      ></textarea>
+    } @else if (parsed().error) {
+      <div class="p-6 text-body-sm">
+        <p class="font-medium text-error">Invalid JSON — fix it in the Code view.</p>
+        <p class="mt-1 text-code-sm font-code-sm text-secondary">{{ parsed().error }}</p>
+      </div>
+    } @else {
+      <div class="py-2 text-code-sm font-code-sm">
+        @for (row of rows(); track row.path) {
+          <div
+            class="group flex min-h-[28px] items-center gap-1 pr-2 hover:bg-surface-container-low"
+            [style.padding-left.px]="8 + row.depth * 16"
+            [class.bg-amber-50]="rowChange(row) === 'changed'"
+            [class.bg-green-50]="rowChange(row) === 'added'"
+          >
+            @if (row.kind !== 'value') {
+              <button type="button" class="flex h-5 w-5 items-center justify-center text-secondary" (click)="toggleCollapse(row.path)">
+                <mat-icon class="text-[16px]">{{ collapsed().has(row.path) ? 'chevron_right' : 'expand_more' }}</mat-icon>
+              </button>
+            } @else {
+              <span class="w-5 shrink-0"></span>
+            }
+
+            <span class="shrink-0 text-on-surface" [class.font-semibold]="row.kind !== 'value'">{{ row.key }}</span>
+            <span class="text-secondary">:</span>
+
+            @if (row.kind === 'value') {
+              @if (editingPath() === row.path) {
+                <input
+                  #valueInput
+                  appAutoFocus
+                  class="min-w-0 flex-1 rounded border border-primary bg-surface-container-lowest px-1.5 py-0.5 text-code-sm font-code-sm outline-none"
+                  [value]="literalText(row.value)"
+                  (keydown.enter)="commitEdit(row, valueInput.value)"
+                  (keydown.escape)="cancelEdit()"
+                  (blur)="commitEdit(row, valueInput.value)"
+                />
+              } @else {
+                <button
+                  type="button"
+                  class="min-w-0 truncate rounded px-1 text-left hover:bg-surface-container hover:underline"
+                  [class]="valueClass(row.value)"
+                  title="Click to edit (text stays text; other types accept a JSON literal)"
+                  (click)="startEdit(row)"
+                >
+                  {{ display(row.value) }}
+                </button>
+                @if (rowChange(row) === 'changed') {
+                  <span class="truncate text-secondary line-through" [title]="'Original: ' + originalValue(row)">{{ originalValue(row) }}</span>
+                }
+              }
+            } @else {
+              <span class="text-secondary">
+                {{ row.kind === 'array' ? '[' + row.childCount + ']' : '{' + row.childCount + '}' }}
+              </span>
+            }
+            @if (rowChange(row) === 'added') {
+              <span class="rounded bg-green-100 px-1 text-label-xs font-label-xs text-green-800">added</span>
+            }
+
+            <!-- Row actions -->
+            <span class="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+              @if (row.kind !== 'value') {
+                <button
+                  type="button"
+                  class="flex h-6 w-6 items-center justify-center rounded text-secondary hover:bg-surface-container hover:text-primary"
+                  [title]="row.kind === 'array' ? 'Append an item (copy of the last one)' : 'Add a field'"
+                  (click)="startAdd(row)"
+                >
+                  <mat-icon class="text-[16px]">add</mat-icon>
+                </button>
+              }
+              @if (row.depth > 0) {
+                <button
+                  type="button"
+                  class="flex h-6 w-6 items-center justify-center rounded text-secondary hover:bg-red-50 hover:text-red-700"
+                  title="Remove"
+                  (click)="remove(row)"
+                >
+                  <mat-icon class="text-[16px]">delete</mat-icon>
+                </button>
+              }
+            </span>
+          </div>
+
+          @if (addingPath() === row.path) {
+            <div class="flex items-center gap-1 py-1 pr-2" [style.padding-left.px]="8 + (row.depth + 1) * 16 + 20">
+              <input
+                #newKey
+                appAutoFocus
+                placeholder="field"
+                class="w-36 rounded border border-primary bg-surface-container-lowest px-1.5 py-0.5 text-code-sm font-code-sm outline-none"
+                (keydown.escape)="cancelAdd()"
+              />
+              <span class="text-secondary">:</span>
+              <input
+                #newValue
+                placeholder='value (e.g. "text", 12, true, null)'
+                class="min-w-0 flex-1 rounded border border-outline-variant bg-surface-container-lowest px-1.5 py-0.5 text-code-sm font-code-sm outline-none focus:border-primary"
+                (keydown.enter)="commitAdd(row, newKey.value, newValue.value)"
+                (keydown.escape)="cancelAdd()"
+              />
+              <button
+                type="button"
+                class="rounded px-2 py-0.5 text-body-sm text-primary hover:bg-surface-container"
+                (click)="commitAdd(row, newKey.value, newValue.value)"
+              >
+                Add
+              </button>
+              <button type="button" class="rounded px-2 py-0.5 text-body-sm text-secondary hover:bg-surface-container" (click)="cancelAdd()">
+                Cancel
+              </button>
+            </div>
+          }
+        }
+
+        @if (diff(); as d) {
+          @if (d.removed.length) {
+            <div class="mx-2 mt-3 rounded-lg border border-red-200 bg-red-50 p-2">
+              <p class="mb-1 text-label-xs font-label-xs font-semibold uppercase text-red-800">
+                Removed vs original ({{ d.removed.length }})
+              </p>
+              @for (item of d.removed; track item.path) {
+                <div class="flex gap-2 truncate text-red-800">
+                  <span class="line-through">{{ item.path }}</span>
+                  <span class="truncate opacity-70">{{ display(item.value) }}</span>
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    }
+  </div>
+</div>

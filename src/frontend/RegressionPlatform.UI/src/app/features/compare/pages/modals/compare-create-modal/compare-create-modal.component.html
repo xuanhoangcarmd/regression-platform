@@ -1,0 +1,118 @@
+<app-modal
+  type="update"
+  size="lg"
+  title="Compare 2 Runs"
+  confirmLabel="Start Compare"
+  [confirmDisabled]="isInvalid()"
+  [confirmLoading]="loading()"
+  (confirm)="save()"
+  (cancelled)="closed.emit()"
+>
+  <form [formGroup]="form" class="flex flex-col gap-4">
+    <p class="-mt-1 text-body-sm text-secondary">Select two runs to compare their results.</p>
+
+    <!-- Run A -> Run B -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+      <div class="min-w-0 flex-1">
+        <span class="mb-1.5 block text-body-sm font-medium text-on-surface">Run A (baseline)</span>
+        <app-select formControlName="runAId" [options]="runOptions()" [fullWidth]="true" />
+        @if (selectedRun(form.controls.runAId.value); as run) {
+          <div class="mt-1.5 flex flex-col gap-0.5 text-label-xs font-label-xs text-secondary">
+            <span>Created: {{ run.createdDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+            <span>Requests: {{ run.totalRequest !== null ? (run.totalRequest | number) : '—' }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="hidden shrink-0 self-center pt-7 text-secondary sm:block">→</div>
+
+      <div class="min-w-0 flex-1">
+        <span class="mb-1.5 block text-body-sm font-medium text-on-surface">Run B (target)</span>
+        <app-select formControlName="runBId" [options]="runOptions()" [fullWidth]="true" />
+        @if (selectedRun(form.controls.runBId.value); as run) {
+          <div class="mt-1.5 flex flex-col gap-0.5 text-label-xs font-label-xs text-secondary">
+            <span>Created: {{ run.createdDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+            <span>Requests: {{ run.totalRequest !== null ? (run.totalRequest | number) : '—' }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (form.controls.runAId.value && form.controls.runAId.value === form.controls.runBId.value) {
+      <p class="text-body-sm text-error">Run A and Run B must be different.</p>
+    }
+
+    <!-- Body source (expected / original) -->
+    @if (form.controls.runAId.value || form.controls.runBId.value) {
+      <div class="flex flex-col gap-2 border-t border-outline-variant pt-4">
+        <span class="text-body-sm font-semibold text-on-surface">Responses</span>
+        <label class="flex cursor-pointer items-center gap-2">
+          <input type="radio" formControlName="baselineMode" value="Expected" class="h-4 w-4 accent-primary-container" />
+          <span class="text-body-sm text-on-surface">
+            Use expected (edited) responses when available
+            @if (editedCount()) {
+              <span class="text-secondary">({{ editedCount() | number }} edited)</span>
+            }
+          </span>
+        </label>
+        <label class="flex cursor-pointer items-center gap-2">
+          <input type="radio" formControlName="baselineMode" value="Original" class="h-4 w-4 accent-primary-container" />
+          <span class="text-body-sm text-on-surface">Use original captured responses only</span>
+        </label>
+      </div>
+    }
+
+    <div class="grid grid-cols-1 gap-4 border-t border-outline-variant pt-4 sm:grid-cols-2">
+      <!-- Compare scope -->
+      <div class="flex flex-col gap-2">
+        <span class="text-body-sm font-semibold text-on-surface">Compare scope</span>
+        <label class="flex cursor-pointer items-center gap-2">
+          <input type="radio" formControlName="apiScope" value="all" class="h-4 w-4 accent-primary-container" />
+          <span class="text-body-sm text-on-surface">Compare all requests</span>
+        </label>
+        <label class="flex cursor-pointer items-center gap-2">
+          <input type="radio" formControlName="apiScope" value="specific" class="h-4 w-4 accent-primary-container" />
+          <span class="text-body-sm text-on-surface">Select specific APIs</span>
+        </label>
+      </div>
+
+      <!-- Options (fixed: applied at capture time, shown for clarity) -->
+      <div class="flex flex-col gap-2">
+        <span class="text-body-sm font-semibold text-on-surface">Options</span>
+        <label class="flex cursor-pointer items-start gap-2">
+          <input type="checkbox" formControlName="ignoreOrder" class="mt-0.5 h-4 w-4 accent-primary-container" />
+          <span class="text-body-sm text-on-surface">
+            Ignore order
+            <!-- <span class="block text-label-xs font-label-xs text-secondary">
+              Off = compare responses exactly as returned (key &amp; array order count).
+            </span> -->
+          </span>
+        </label>
+        <label class="flex items-center gap-2 opacity-70">
+          <input type="checkbox" checked disabled class="h-4 w-4 accent-primary-container" />
+          <span class="text-body-sm text-on-surface">Use Ignore Rules</span>
+        </label>
+      </div>
+    </div>
+
+    @if (form.controls.apiScope.value === 'specific') {
+      <div class="max-h-40 overflow-y-auto rounded-lg border border-outline-variant">
+        @for (option of apiOptions(); track option.value) {
+          <label
+            class="flex cursor-pointer items-center gap-3 border-b border-outline-variant px-3 py-2 last:border-b-0 hover:bg-surface-container-low"
+          >
+            <input
+              type="checkbox"
+              class="h-4 w-4 accent-primary-container"
+              [checked]="isApiSelected(apiId(option))"
+              (change)="toggleApi(apiId(option))"
+            />
+            <span class="text-body-sm text-on-surface">{{ option.label }}</span>
+          </label>
+        } @empty {
+          <p class="px-3 py-2 text-body-sm text-secondary">No APIs in the project yet.</p>
+        }
+      </div>
+    }
+  </form>
+</app-modal>

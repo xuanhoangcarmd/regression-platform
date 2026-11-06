@@ -1,0 +1,15 @@
+<app-modal
+  type="remove"
+  size="sm"
+  title="Delete Dataset"
+  confirmLabel="Delete"
+  [confirmLoading]="loading()"
+  (confirm)="confirmed.emit()"
+  (cancelled)="closed.emit()"
+>
+  <p class="text-body-sm leading-relaxed text-on-surface">
+    Delete dataset "{{ dataset().name }}" and <span class="font-medium text-error">all its requests</span>? This
+    is only allowed when the dataset is not used by any run — delete those runs first, or set it to Inactive
+    instead. This cannot be undone.
+  </p>
+</app-modal>

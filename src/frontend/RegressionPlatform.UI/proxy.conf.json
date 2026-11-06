@@ -1,0 +1,15 @@
+{
+  "/api": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/payload-gen-api": {
+    "target": "https://dev-core-service.innova.com",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": { "^/payload-gen-api": "/payload-v6-generator/api" },
+    "logLevel": "debug"
+  }
+}

@@ -1,0 +1,108 @@
+<!-- Page header -->
+<div class="mb-3 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+  <div>
+    <h1 class="font-headline-md text-headline-md text-on-surface">APIs</h1>
+    <p class="mt-1 text-body-sm text-secondary">List of API definitions</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <app-button variant="secondary" [icon]="importIcon" (click)="importingApi.set(true)">Import from Swagger</app-button>
+    <app-button [icon]="addIcon" (click)="addingApi.set(true)">Add API</app-button>
+  </div>
+</div>
+
+<!-- Card -->
+<div
+  class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm"
+>
+  <!-- Toolbar -->
+  <div class="flex flex-col items-center justify-between gap-4 border-b border-outline-variant p-4 sm:flex-row">
+    <div class="w-full sm:w-96">
+      <app-input [formControl]="searchControl" [icon]="searchIcon" placeholder="Search APIs..." />
+    </div>
+    <div class="flex w-full items-center gap-3 sm:w-auto">
+      <span class="whitespace-nowrap text-body-sm text-secondary">Status</span>
+      <app-select [formControl]="statusControl" [options]="statusOptions" />
+    </div>
+  </div>
+
+  <!-- Table -->
+  <app-data-table
+    [columns]="columns"
+    [rows]="result().items"
+    [loading]="loading()"
+    [sortKey]="sortBy()"
+    [sortDirection]="sortDirection()"
+    (sortChange)="onSort($event)"
+    emptyMessage="No APIs found."
+  >
+    <ng-template appCell="id" let-row>
+      <span class="cursor-pointer text-body-sm font-medium text-primary-container hover:underline">
+        {{ displayApiId(asApi(row).id) }}
+      </span>
+    </ng-template>
+
+    <ng-template appCell="method" let-row>
+      <span class="rounded bg-surface-container-high px-2 py-1 text-body-sm font-medium text-on-surface">{{
+        asApi(row).method
+      }}</span>
+    </ng-template>
+
+    <ng-template appCell="endpoint" let-row>
+      <span class="text-code-sm font-code-sm text-secondary">{{ asApi(row).endpoint }}</span>
+    </ng-template>
+
+    <ng-template appCell="requestCount" let-row>
+      <span class="text-body-sm text-on-surface">{{ asApi(row).requestCount | number }}</span>
+    </ng-template>
+
+    <ng-template appCell="isActive" let-row>
+      <app-status-badge
+        [label]="asApi(row).isActive ? 'Active' : 'Inactive'"
+        [tone]="asApi(row).isActive ? 'success' : 'neutral'"
+      />
+    </ng-template>
+
+    <ng-template appCell="actions" let-row>
+      <div class="flex items-center justify-center gap-2">
+        <button
+          type="button"
+          title="Edit"
+          (click)="openEdit(row)"
+          class="text-slate-400 transition-colors hover:text-primary-container"
+        >
+          <mat-icon class="text-[18px]">{{ editIcon }}</mat-icon>
+        </button>
+        <button
+          type="button"
+          title="Delete"
+          (click)="openRemove(row)"
+          class="text-slate-400 transition-colors hover:text-error"
+        >
+          <mat-icon class="text-[18px]">{{ deleteIcon }}</mat-icon>
+        </button>
+      </div>
+    </ng-template>
+  </app-data-table>
+
+  <!-- Pagination -->
+  <app-paginator
+    [pageNumber]="result().pageNumber"
+    [pageSize]="result().pageSize"
+    [totalCount]="result().totalCount"
+    (pageChange)="onPage($event)"
+  />
+</div>
+
+<!-- Modals -->
+@if (importingApi()) {
+  <app-api-import-modal (closed)="importingApi.set(false)" />
+}
+@if (addingApi()) {
+  <app-api-add-modal [loading]="actionLoading()" (closed)="addingApi.set(false)" (created)="onCreated($event)" />
+}
+@if (editingApi(); as api) {
+  <app-api-edit-modal [api]="api" [loading]="actionLoading()" (closed)="editingApi.set(null)" (saved)="onEditSaved($event)" />
+}
+@if (removingApi(); as api) {
+  <app-api-remove-modal [api]="api" [loading]="actionLoading()" (closed)="removingApi.set(null)" (confirmed)="onRemoveConfirmed(api)" />
+}

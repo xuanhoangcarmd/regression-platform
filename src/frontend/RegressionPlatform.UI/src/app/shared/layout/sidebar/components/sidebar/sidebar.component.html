@@ -1,0 +1,45 @@
+<aside class="flex h-screen w-60 flex-col bg-sidebar py-4 text-sidebar-on">
+  <!-- Brand -->
+  <div class="mb-8 flex items-center gap-3 px-6">
+    <mat-icon class="text-[24px]">{{ brandIcon }}</mat-icon>
+    <h1 class="font-title-sm text-title-sm font-bold tracking-tight">Regression Platform</h1>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-2">
+    <!-- Dashboard menu hidden for now. -->
+    <!-- <app-sidebar-nav-item [icon]="homeIcon" label="Dashboard" [route]="dashboardRoute" /> -->
+    <app-sidebar-nav-item [icon]="dataLibraryIcon" label="Data Library" [route]="dataLibraryRoute" />
+
+    <div class="space-y-1">
+      <button
+        type="button"
+        (click)="toggleProjects()"
+        class="flex w-full items-center justify-between rounded-lg px-4 py-2 text-body-sm text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-on"
+      >
+        <span class="flex items-center gap-3">
+          <mat-icon class="text-[20px]">{{ projectsIcon }}</mat-icon>
+          Projects
+        </span>
+        <mat-icon class="text-[18px]">{{ projectsExpanded() ? expandLessIcon : expandMoreIcon }}</mat-icon>
+      </button>
+
+      @if (projectsExpanded()) {
+        <div class="ml-2 space-y-1">
+          @for (project of projects(); track project.id) {
+            <app-sidebar-project-group
+              [project]="project"
+              [expanded]="openProjectId() === project.id"
+              (toggled)="toggleProject(project.id)"
+            />
+          }
+        </div>
+      }
+    </div>
+  </nav>
+
+  <!-- Footer -->
+  <div class="border-t border-sidebar-line px-2 pt-4">
+    <app-sidebar-nav-item [icon]="settingsIcon" label="Settings" [route]="settingsRoute" />
+  </div>
+</aside>
