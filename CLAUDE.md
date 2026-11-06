@@ -186,6 +186,45 @@ Project-specific coding rules live under `docs/rules/`, split into focused files
 
 ---
 
+# Git Workflow
+
+The repo uses git so every feature can be traced and rolled back on its own. Follow this for every task that changes code.
+
+## Branch per feature
+
+- Before starting a feature or fix, check `git status`. If the tree has uncommitted changes, stop and tell the user.
+- Create a branch from `main`: `feature/<short-name>`, `fix/<short-name>` or `chore/<short-name>` (kebab-case, e.g. `feature/compare-order-mode`). If a spec exists, reuse its short name.
+- Never commit feature work directly on `main`.
+
+## Commit per step
+
+- Commit small, logical steps (e.g. DB migration → backend → frontend → docs), not one big commit at the end.
+- Commit a migration `database/YYYYMMDD_*.sql` together with the code that needs it, so the commit shows which code requires which migration.
+- Message format: a short imperative subject (≤ 72 chars), a blank line, then a body explaining what and why. Mention any migration the user must run.
+- End every commit message with the `Co-Authored-By` attribution line.
+
+## Before every commit
+
+- Backend changed: `dotnet build` must pass with 0 errors.
+- Frontend changed: `ng lint` and `ng build` must pass.
+- If a check fails, fix it or tell the user. Never commit broken code silently, and never use `--no-verify`.
+- Run `git status` and the staged diff, and confirm that no secret is staged.
+
+## Secrets — never commit
+
+- Never commit `appsettings.json` / `appsettings.*.json` (only `appsettings.Example.json`, with values masked).
+- Never commit `tools/`: it holds live credentials, API keys, tokens and customer data.
+- Never copy keys or passwords into code, docs, specs or commit messages. Jira tickets contain live keys in curl samples.
+- Keep `.gitignore` covering these. Stage files by explicit path rather than `git add -A`.
+
+## Finishing and rolling back
+
+- When the feature is done and verified, tell the user the branch and commit list. Merge into `main` with `git merge --no-ff` only when the user asks.
+- Do not push, force-push, rebase shared history, or delete branches unless the user asks.
+- To roll back a feature, use `git revert <commit>` (or revert the merge commit), not manual edits. A DB change still needs a separate rollback script, which the user runs.
+
+---
+
 # Priority
 
 When multiple documents conflict, follow this priority:
