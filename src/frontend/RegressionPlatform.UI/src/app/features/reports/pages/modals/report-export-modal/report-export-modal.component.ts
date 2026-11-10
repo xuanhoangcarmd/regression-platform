@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 import { ModalComponent } from '@shared/components';
@@ -6,11 +6,18 @@ import { ModalComponent } from '@shared/components';
 import { IReportDetail } from '../../../models/report.model';
 import { IReportExportOptions, ReportExportFormat, TestResultsOutput } from '../../../services/report-export.service';
 import { displayReportId } from '../../../services/report.service';
+import { LiveDataContextService } from '../../../services/live-data-context.service';
 
 /** The chosen export format + options, emitted to the parent (which runs the export + shows progress). */
 export interface IReportExportRequest {
   format: ReportExportFormat;
   options: IReportExportOptions;
+}
+
+/** One editable context rule row in the modal (fields as comma-separated text). */
+interface ContextRuleDraft {
+  target: string;
+  fields: string;
 }
 
 interface FormatOption {
@@ -53,6 +60,12 @@ export class ReportExportModalComponent {
   /** Live Data Result only: also split each request's fields into their own columns. */
   protected readonly liveDataSplitRequest = signal(false);
 
+  private readonly liveDataContext = inject(LiveDataContextService);
+  /** Live Data Result only: context-field rules, loaded from localStorage and saved on Export. */
+  protected readonly contextRules = signal<ContextRuleDraft[]>(
+    this.liveDataContext.rules().map((rule) => ({ target: rule.target, fields: rule.fields.join(', ') })),
+  );
+
   /** The Test Results format has its own output choice instead of the content options. */
   protected readonly isTestResults = computed(() => this.selectedFormat() === 'testresults');
   /** The Live Data Result template is always a ZIP with linked .json files — no content options. */
@@ -86,7 +99,25 @@ export class ReportExportModalComponent {
     { value: 'json', title: 'JSON File', desc: 'Structured report data as JSON', icon: 'data_object', accent: 'bg-violet-50 text-violet-600' },
   ];
 
+  protected addContextRule(): void {
+    this.contextRules.update((rules) => [...rules, { target: '', fields: '' }]);
+  }
+
+  protected removeContextRule(index: number): void {
+    this.contextRules.update((rules) => rules.filter((_, i) => i !== index));
+  }
+
+  protected updateContextRule(index: number, key: keyof ContextRuleDraft, value: string): void {
+    this.contextRules.update((rules) => rules.map((rule, i) => (i === index ? { ...rule, [key]: value } : rule)));
+  }
+
   protected save(): void {
+    // Live Data: persist the context rules (localStorage) and hand the cleaned list to the export.
+    const liveDataContextRules = this.isLiveData()
+      ? this.liveDataContext.save(
+          this.contextRules().map((rule) => ({ target: rule.target, fields: rule.fields.split(',') })),
+        )
+      : [];
     // Hand the request to the parent (which runs the export + shows progress on the page) and close.
     this.submitted.emit({
       format: this.selectedFormat(),
@@ -99,6 +130,7 @@ export class ReportExportModalComponent {
         fieldReportFields: this.fieldReportFields().trim(),
         testResultsOutput: this.testResultsOutput(),
         liveDataSplitRequest: this.isLiveData() && this.liveDataSplitRequest(),
+        liveDataContextRules,
       },
     });
     this.closed.emit();

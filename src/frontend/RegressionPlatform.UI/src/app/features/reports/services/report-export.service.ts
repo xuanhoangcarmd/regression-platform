@@ -11,6 +11,8 @@ import { CompareApiService } from '@features/compare/apis/compare-api.service';
 import { ICompareChangeSummary, ICompareFullDetail, ICompareTestResultRow } from '@features/compare/models/compare.model';
 import { displayCompareId } from '@features/compare/services/compare.service';
 import { displayReportId } from './report.service';
+import { LiveDataContextService } from './live-data-context.service';
+import { ILiveDataContextRule } from '../models/live-data-context.model';
 
 export type ReportExportFormat = 'pdf' | 'excel' | 'testresults' | 'livedata' | 'json';
 
@@ -42,6 +44,11 @@ export interface IReportExportOptions {
    * columns after the template columns — same layout as the request import Excel.
    */
   liveDataSplitRequest?: boolean;
+  /**
+   * Live Data Result only: context-field rules — a changed field matching a rule's target also shows
+   * the rule's fields (e.g. the DTC code next to a changed `Dtcs[*].Definition`).
+   */
+  liveDataContextRules?: ILiveDataContextRule[];
 }
 
 /** Distribution categories with their canvas/Excel colours (hex). */
@@ -67,6 +74,7 @@ export class ReportExportService {
   private readonly pdf = inject(ReportPdfService);
   private readonly compareApi = inject(CompareApiService);
   private readonly aiService = inject(ReportAiService);
+  private readonly liveDataContext = inject(LiveDataContextService);
 
   /**
    * Ids of reports whose export is currently generating. Lives in this root singleton, so the progress
@@ -119,7 +127,12 @@ export class ReportExportService {
         await this.buildTestResults(report, options.testResultsOutput);
         break;
       case 'livedata':
-        await this.buildLiveDataResult(report, context, options.liveDataSplitRequest ?? false);
+        await this.buildLiveDataResult(
+          report,
+          context,
+          options.liveDataSplitRequest ?? false,
+          options.liveDataContextRules ?? [],
+        );
         break;
       case 'json':
         await this.buildJson(report, context, options, ai);
@@ -1048,7 +1061,12 @@ export class ReportExportService {
    * A FAILED request is followed by one row per changed field (Field = path, Status = Different,
    * Expected Result / Response = old / new value). Everything ships as one ZIP named after the report.
    */
-  private async buildLiveDataResult(report: IReportDetail, context: IReportPdfContext, splitRequest: boolean): Promise<void> {
+  private async buildLiveDataResult(
+    report: IReportDetail,
+    context: IReportPdfContext,
+    splitRequest: boolean,
+    contextRules: ILiveDataContextRule[],
+  ): Promise<void> {
     // Same ordering as the other exports: Title (natural), API / id only break ties — Index follows it.
     const rows = [...(await firstValueFrom(this.compareApi.getTestResults(report.compareJobId)))].sort(
       (a, b) =>
@@ -1143,7 +1161,7 @@ export class ReportExportService {
       if (passed) {
         return;
       }
-      for (const fr of this.liveDataFieldRows(row)) {
+      for (const fr of this.liveDataFieldRows(row, contextRules)) {
         const detail = ws.getRow(rowIndex++);
         detail.getCell(7).value = fr.field;
         detail.getCell(8).value = fr.status;
@@ -1191,15 +1209,21 @@ export class ReportExportService {
    * The detail rows under a FAILED request: one per changed field with the reference file's wording
    * (Different / Missing / Added / Type changed); Added/Removed/Failed requests get one explanatory row.
    */
-  private liveDataFieldRows(row: ICompareTestResultRow): { field: string; status: string; oldV: string; newV: string }[] {
+  private liveDataFieldRows(
+    row: ICompareTestResultRow,
+    contextRules: readonly ILiveDataContextRule[] = [],
+  ): { field: string; status: string; oldV: string; newV: string }[] {
     switch (row.result) {
       case 'Changed': {
         const fields = this.parseFieldDiffs(row.diffJson);
         if (!fields.length) {
           return [{ field: '(response)', status: 'Different', oldV: '', newV: '' }];
         }
+        // Responses are parsed only when a context rule could need them.
+        const oldResponse = contextRules.length ? this.parseJson(row.responseAJson) : undefined;
+        const newResponse = contextRules.length ? this.parseJson(row.responseBJson) : undefined;
         return fields.map((f) => ({
-          field: f.path,
+          field: this.withContext(f.path, f.changeType, contextRules, oldResponse, newResponse),
           status: this.liveDataStatus(f.changeType),
           oldV: this.cellValue(f.old),
           newV: this.cellValue(f.new),
@@ -1263,6 +1287,33 @@ export class ReportExportService {
       }
     }
     return fields;
+  }
+
+  /** The changed path plus its context (`… (DTC: C0750)`) when a context rule matches. */
+  private withContext(
+    path: string,
+    changeType: string,
+    contextRules: readonly ILiveDataContextRule[],
+    oldResponse: unknown,
+    newResponse: unknown,
+  ): string {
+    if (!contextRules.length) {
+      return path;
+    }
+    const extra = this.liveDataContext.describe(contextRules, path, changeType, oldResponse, newResponse);
+    return extra ? `${path} (${extra})` : path;
+  }
+
+  /** Parses a response body; undefined when empty or not JSON. */
+  private parseJson(json: string | null | undefined): unknown {
+    if (!json) {
+      return undefined;
+    }
+    try {
+      return JSON.parse(json);
+    } catch {
+      return undefined;
+    }
   }
 
   /** JsonDiffer change type → the Live Data Result status word. */
