@@ -39,26 +39,43 @@ export class LiveDataContextService {
   }
 
   /**
-   * The context text for one diff entry, e.g. `DTC: C0750` (several fields joined by ` · `), or `''`
-   * when no rule matches. Values come from the new response for changed/added entries and from the
-   * old one for removed entries (the diff path indexes that side), falling back to the other side.
+   * The export column names for the rules' fields — one per distinct label (the field's last key,
+   * e.g. `DTC` / `DTCCode`), in rule order. Fields sharing a label share one column.
    */
-  describe(
+  columnLabels(rules: readonly ILiveDataContextRule[]): string[] {
+    const labels = new Set<string>();
+    for (const rule of rules) {
+      for (const field of rule.fields) {
+        const parsed = this.parse(field);
+        if (parsed) {
+          labels.add(this.label(parsed, field));
+        }
+      }
+    }
+    return [...labels];
+  }
+
+  /**
+   * The context values for one diff entry, keyed by column label (see {@link columnLabels}); empty when
+   * no rule matches. Values come from the new response for changed/added entries and from the old one
+   * for removed entries (the diff path indexes that side), falling back to the other side. Several
+   * different values for one label are joined with ` · `.
+   */
+  resolve(
     rules: readonly ILiveDataContextRule[],
     diffPath: string,
     changeType: string,
     oldResponse: unknown,
     newResponse: unknown,
-  ): string {
+  ): Map<string, string> {
+    const values = new Map<string, string[]>();
     const path = this.parse(diffPath);
     if (!path) {
-      return '';
+      return new Map();
     }
     const side: ResponseSide = changeType === 'FieldRemoved' ? 'old' : 'new';
     const [first, second] = side === 'old' ? [oldResponse, newResponse] : [newResponse, oldResponse];
 
-    const parts: string[] = [];
-    const seen = new Set<string>();
     for (const rule of rules) {
       const pattern = this.parse(rule.target);
       const match = pattern ? this.match(pattern, path) : null;
@@ -75,14 +92,15 @@ export class LiveDataContextService {
           value = this.read(second, fieldPath);
         }
         const label = this.label(fieldPath, field);
-        const part = `${label}: ${value === undefined ? '(n/a)' : this.text(value)}`;
-        if (!seen.has(part)) {
-          seen.add(part);
-          parts.push(part);
+        const text = value === undefined ? '(n/a)' : this.text(value);
+        const list = values.get(label) ?? [];
+        if (!list.includes(text)) {
+          list.push(text);
         }
+        values.set(label, list);
       }
     }
-    return parts.join(' · ');
+    return new Map([...values].map(([label, list]) => [label, list.join(' · ')]));
   }
 
   /** Parses `$.A.B[0].C` (leading `$` optional) into segments; null when it isn't a path. */

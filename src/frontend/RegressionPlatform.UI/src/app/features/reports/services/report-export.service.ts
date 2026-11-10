@@ -1055,7 +1055,7 @@ export class ReportExportService {
 
   /**
    * "Live Data Result" export — the review template:
-   * Index | Test Case Id | Test Name | request | Language | App | Field | Status | <date> Expected Result | <date> Response | Expected Time (ms) | Response Time (ms).
+   * Index | Test Case Id | Test Name | request | Language | App | Field | [context columns] | Status | <date> Expected Result | <date> Response | Expected Time (ms) | Response Time (ms).
    * One "Summary" row per request (Test Case Id = Title, Test Name = Description, Status PASS/FAILED, the
    * request + both runs' responses linked as .json files under requests/ · expected_response/ · response/).
    * A FAILED request is followed by one row per changed field (Field = path, Status = Different,
@@ -1076,7 +1076,13 @@ export class ReportExportService {
     );
     const files = new Map<string, string>();
     const datePrefix = this.dateStamp(report.generatedDate);
-    const templateColumns = ReportExportService.ldColumnCount;
+    // Context-field columns (e.g. DTC) sit right after "Field"; template columns after it shift right.
+    const contextLabels = this.liveDataContext.columnLabels(contextRules);
+    const fieldColumn = 7;
+    const col = (templateColumn: number): number =>
+      templateColumn <= fieldColumn ? templateColumn : templateColumn + contextLabels.length;
+    const statusColumn = col(8);
+    const templateColumns = ReportExportService.ldColumnCount + contextLabels.length;
 
     // Optional: one extra column per request field (import-Excel layout), after the template columns.
     const requestFields = splitRequest ? rows.map((row) => this.requestFieldMap(row)) : [];
@@ -1090,7 +1096,7 @@ export class ReportExportService {
     const ws = workbook.addWorksheet('Live Data Result', { views: [{ state: 'frozen', ySplit: 1 }] });
     const header = ws.getRow(1);
     header.values = [
-      'Index', 'Test Case Id', 'Test Name', 'request', 'Language', 'App', 'Field', 'Status',
+      'Index', 'Test Case Id', 'Test Name', 'request', 'Language', 'App', 'Field', ...contextLabels, 'Status',
       `${datePrefix} Expected Result`, `${datePrefix} Response`, 'Expected Time (ms)', 'Response Time (ms)',
       ...fieldNames,
     ];
@@ -1104,7 +1110,9 @@ export class ReportExportService {
     });
     ws.columns = [
       { width: 8 }, { width: 28 }, { width: 32 }, { width: 26 }, { width: 10 }, { width: 12 },
-      { width: 34 }, { width: 10 }, { width: 36 }, { width: 36 }, { width: 14 }, { width: 14 },
+      { width: 34 },
+      ...contextLabels.map((label) => ({ width: Math.min(30, Math.max(12, label.length + 4)) })),
+      { width: 10 }, { width: 36 }, { width: 36 }, { width: 14 }, { width: 14 },
       ...fieldNames.map((name) => ({ width: Math.min(40, Math.max(14, name.length + 2)) })),
     ];
 
@@ -1127,11 +1135,11 @@ export class ReportExportService {
       summary.getCell(5).value = '';
       summary.getCell(6).value = context.projectName ?? '';
       summary.getCell(7).value = 'Summary';
-      summary.getCell(8).value = passed ? 'PASS' : 'FAILED';
-      this.fileCell(summary.getCell(9), row.responseAJson ?? '', files, `expected_response/row_${index}.json`);
-      this.fileCell(summary.getCell(10), row.responseBJson ?? '', files, `response/row_${index}.json`);
-      summary.getCell(11).value = row.durationMsA ?? '';
-      summary.getCell(12).value = row.durationMsB ?? '';
+      summary.getCell(statusColumn).value = passed ? 'PASS' : 'FAILED';
+      this.fileCell(summary.getCell(col(9)), row.responseAJson ?? '', files, `expected_response/row_${index}.json`);
+      this.fileCell(summary.getCell(col(10)), row.responseBJson ?? '', files, `response/row_${index}.json`);
+      summary.getCell(col(11)).value = row.durationMsA ?? '';
+      summary.getCell(col(12)).value = row.durationMsB ?? '';
       if (splitRequest) {
         const fields = requestFields[i];
         fieldNames.forEach((name, offset) => {
@@ -1144,11 +1152,11 @@ export class ReportExportService {
       for (let c = 1; c <= columns; c++) {
         const cell = summary.getCell(c);
         cell.border = BORDER_ALL;
-        if (index % 2 === 1 && c !== 8) {
+        if (index % 2 === 1 && c !== statusColumn) {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ReportExportService.ldZebraFill } };
         }
       }
-      const status = summary.getCell(8);
+      const status = summary.getCell(statusColumn);
       status.alignment = { horizontal: 'center', vertical: 'middle' };
       status.fill = {
         type: 'pattern',
@@ -1163,13 +1171,16 @@ export class ReportExportService {
       }
       for (const fr of this.liveDataFieldRows(row, contextRules)) {
         const detail = ws.getRow(rowIndex++);
-        detail.getCell(7).value = fr.field;
-        detail.getCell(8).value = fr.status;
-        detail.getCell(9).value = this.cellText(fr.oldV);
-        detail.getCell(10).value = this.cellText(fr.newV);
-        detail.getCell(9).alignment = { wrapText: false, vertical: 'top' };
-        detail.getCell(10).alignment = { wrapText: false, vertical: 'top' };
-        detail.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
+        detail.getCell(fieldColumn).value = fr.field;
+        contextLabels.forEach((label, offset) => {
+          detail.getCell(fieldColumn + 1 + offset).value = fr.context?.get(label) ?? '';
+        });
+        detail.getCell(statusColumn).value = fr.status;
+        detail.getCell(col(9)).value = this.cellText(fr.oldV);
+        detail.getCell(col(10)).value = this.cellText(fr.newV);
+        detail.getCell(col(9)).alignment = { wrapText: false, vertical: 'top' };
+        detail.getCell(col(10)).alignment = { wrapText: false, vertical: 'top' };
+        detail.getCell(statusColumn).alignment = { horizontal: 'center', vertical: 'middle' };
         for (let c = 1; c <= columns; c++) {
           const cell = detail.getCell(c);
           cell.border = BORDER_ALL;
@@ -1212,7 +1223,7 @@ export class ReportExportService {
   private liveDataFieldRows(
     row: ICompareTestResultRow,
     contextRules: readonly ILiveDataContextRule[] = [],
-  ): { field: string; status: string; oldV: string; newV: string }[] {
+  ): { field: string; status: string; oldV: string; newV: string; context?: Map<string, string> }[] {
     switch (row.result) {
       case 'Changed': {
         const fields = this.parseFieldDiffs(row.diffJson);
@@ -1223,7 +1234,10 @@ export class ReportExportService {
         const oldResponse = contextRules.length ? this.parseJson(row.responseAJson) : undefined;
         const newResponse = contextRules.length ? this.parseJson(row.responseBJson) : undefined;
         return fields.map((f) => ({
-          field: this.withContext(f.path, f.changeType, contextRules, oldResponse, newResponse),
+          field: f.path,
+          context: contextRules.length
+            ? this.liveDataContext.resolve(contextRules, f.path, f.changeType, oldResponse, newResponse)
+            : undefined,
           status: this.liveDataStatus(f.changeType),
           oldV: this.cellValue(f.old),
           newV: this.cellValue(f.new),
@@ -1287,21 +1301,6 @@ export class ReportExportService {
       }
     }
     return fields;
-  }
-
-  /** The changed path plus its context (`… (DTC: C0750)`) when a context rule matches. */
-  private withContext(
-    path: string,
-    changeType: string,
-    contextRules: readonly ILiveDataContextRule[],
-    oldResponse: unknown,
-    newResponse: unknown,
-  ): string {
-    if (!contextRules.length) {
-      return path;
-    }
-    const extra = this.liveDataContext.describe(contextRules, path, changeType, oldResponse, newResponse);
-    return extra ? `${path} (${extra})` : path;
   }
 
   /** Parses a response body; undefined when empty or not JSON. */
