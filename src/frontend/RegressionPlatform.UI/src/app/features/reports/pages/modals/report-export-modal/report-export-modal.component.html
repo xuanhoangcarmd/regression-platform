@@ -108,6 +108,61 @@
             </span>
           </span>
         </label>
+
+        <!-- Context fields: show identifying values (e.g. the DTC) next to a changed field -->
+        <div class="mt-4 flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span class="text-body-sm font-semibold text-on-surface">Context fields</span>
+            <button
+              type="button"
+              class="flex items-center gap-1 text-body-sm font-medium text-primary"
+              (click)="addContextRule()"
+            >
+              <mat-icon class="text-[18px]">add</mat-icon>
+              Add rule
+            </button>
+          </div>
+          <span class="text-label-xs font-label-xs text-secondary">
+            When a changed / added / removed field matches <em>Changed field</em>, the <em>Show with</em> values
+            are written in their own columns right after Field (column name = the field's last key, e.g.
+            <span class="text-code-sm font-code-sm">DTC</span> = <span class="text-code-sm font-code-sm">C0750</span>).
+            <span class="text-code-sm font-code-sm">[*]</span> = any index (reused for the Show with path); a Show with
+            path without <span class="text-code-sm font-code-sm">$</span> (e.g. <span class="text-code-sm font-code-sm">DTC</span>)
+            is read from the same array item. Saved in this browser.
+          </span>
+          @for (rule of contextRules(); track $index) {
+            <div class="flex items-start gap-2">
+              <div class="flex flex-1 flex-col gap-1">
+                <input
+                  type="text"
+                  aria-label="Changed field path"
+                  class="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-1.5 text-code-sm font-code-sm text-on-surface outline-none focus:border-primary"
+                  placeholder="Changed field, e.g. $.VehicleData.TPMSData.Dtcs[*].Definition"
+                  [value]="rule.target"
+                  (input)="updateContextRule($index, 'target', $any($event.target).value)"
+                />
+                <input
+                  type="text"
+                  aria-label="Fields to show with it"
+                  class="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-1.5 text-code-sm font-code-sm text-on-surface outline-none focus:border-primary"
+                  placeholder="Show with (comma-separated), e.g. $.VehicleData.TPMSData.Dtcs[*].DTC"
+                  [value]="rule.fields"
+                  (input)="updateContextRule($index, 'fields', $any($event.target).value)"
+                />
+              </div>
+              <button
+                type="button"
+                class="mt-1 text-secondary hover:text-error"
+                aria-label="Remove rule"
+                (click)="removeContextRule($index)"
+              >
+                <mat-icon class="text-[20px]">delete</mat-icon>
+              </button>
+            </div>
+          } @empty {
+            <span class="text-label-xs font-label-xs text-secondary">No rules yet.</span>
+          }
+        </div>
       </div>
     } @else {
     <!-- Export options -->
