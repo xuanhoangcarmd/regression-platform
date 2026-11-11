@@ -238,11 +238,22 @@ public sealed class CompareExecutor(
         var canonicalA = ignoreOrder ? ResponseCanonicalizer.Process(bodyA, applicable, trims) : ResponseCanonicalizer.ProcessOrdered(bodyA, applicable, trims);
         var canonicalB = ignoreOrder ? ResponseCanonicalizer.Process(bodyB, applicable, trims) : ResponseCanonicalizer.ProcessOrdered(bodyB, applicable, trims);
 
-        if (string.Equals(canonicalA.Hash, canonicalB.Hash, StringComparison.Ordinal) && item.A.StatusCode == item.B.StatusCode)
+        var sameStatus = item.A.StatusCode == item.B.StatusCode;
+        if (string.Equals(canonicalA.Hash, canonicalB.Hash, StringComparison.Ordinal) && sameStatus)
         {
             return (CompareResultTypes.Unchanged, null);
         }
-        return (CompareResultTypes.Changed, JsonDiffer.Diff(canonicalA.Canonical, canonicalB.Canonical, strictOrder: !ignoreOrder));
+
+        // The hash only sorts object keys, so in ignore-order mode a reordered array of primitives
+        // (e.g. DTCCodes ["P0742","P0741"] vs ["P0741","P0742"]) still hashes differently. The differ
+        // matches arrays without regard to order and is authoritative: no differences + same status
+        // → Unchanged (otherwise the request showed "Changed" with an empty diff).
+        var diffJson = JsonDiffer.Diff(canonicalA.Canonical, canonicalB.Canonical, strictOrder: !ignoreOrder);
+        if (diffJson is null && sameStatus)
+        {
+            return (CompareResultTypes.Unchanged, null);
+        }
+        return (CompareResultTypes.Changed, diffJson);
     }
 
     /// <summary>The identity hash for the fast path: key-sorted (ignore order) or original-order (strict).</summary>
