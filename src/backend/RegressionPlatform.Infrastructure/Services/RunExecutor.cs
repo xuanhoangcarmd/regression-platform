@@ -361,11 +361,12 @@ public sealed class RunExecutor(
 
     /// <summary>
     /// Replaces each <c>{name}</c> in the path with the matching field from <paramref name="query"/>
-    /// (URL-encoded), removing consumed fields. A placeholder with no matching field is left as-is.
+    /// (URL-encoded), removing consumed fields. A placeholder whose field is missing, JSON null or empty
+    /// becomes the literal <c>null</c> (e.g. <c>?category=null</c>) instead of being sent as <c>{category}</c>.
     /// </summary>
     private static string SubstitutePathParameters(string path, Dictionary<string, string> query)
     {
-        if (path.IndexOf('{') < 0 || query.Count == 0)
+        if (path.IndexOf('{') < 0)
         {
             return path;
         }
@@ -373,14 +374,16 @@ public sealed class RunExecutor(
         return PathParameterPattern.Replace(path, match =>
         {
             var name = match.Groups[1].Value.Trim();
-            if (query.TryGetValue(name, out var value))
+            if (query.Remove(name, out var value) && !string.IsNullOrWhiteSpace(value))
             {
-                query.Remove(name);
                 return Uri.EscapeDataString(value);
             }
-            return match.Value; // no matching field — leave the placeholder untouched
+            return MissingParameterValue; // no value for this placeholder — send "null"
         });
     }
+
+    /// <summary>Sent in place of a URL placeholder that has no value in the request.</summary>
+    private const string MissingParameterValue = "null";
 
     /// <summary>Parses a JSON object of string-ish values into a map; returns empty for null/invalid input.</summary>
     private static Dictionary<string, string> ParseStringMap(string? json)
