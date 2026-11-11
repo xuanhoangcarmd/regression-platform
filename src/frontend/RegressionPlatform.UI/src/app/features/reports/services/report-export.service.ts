@@ -49,6 +49,8 @@ export interface IReportExportOptions {
    * the rule's fields (e.g. the DTC code next to a changed `Dtcs[*].Definition`).
    */
   liveDataContextRules?: ILiveDataContextRule[];
+  /** Live Data Result only: one workbook per API (each in its own folder of the ZIP) instead of one for all. */
+  liveDataSplitByApi?: boolean;
 }
 
 /** Distribution categories with their canvas/Excel colours (hex). */
@@ -132,6 +134,7 @@ export class ReportExportService {
           context,
           options.liveDataSplitRequest ?? false,
           options.liveDataContextRules ?? [],
+          options.liveDataSplitByApi ?? false,
         );
         break;
       case 'json':
@@ -1023,14 +1026,19 @@ export class ReportExportService {
 
   /** "TestCase_0001_<title>" — a Windows-safe file-name stem, unique per row thanks to the index. */
   private testCaseFileName(index: number, title: string): string {
-    const slug = title
+    const slug = this.fileSlug(title, 60);
+    return `TestCase_${String(index).padStart(4, '0')}${slug ? `_${slug}` : ''}`;
+  }
+
+  /** A Windows-safe file / folder name fragment (invalid chars and spaces → `_`), capped at maxLength. */
+  private fileSlug(text: string, maxLength: number): string {
+    return text
       // eslint-disable-next-line no-control-regex -- control chars are invalid in Windows file names
       .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
       .replace(/\s+/g, '_')
       .replace(/_+/g, '_')
       .replace(/^[_.]+|[_.]+$/g, '')
-      .slice(0, 60);
-    return `TestCase_${String(index).padStart(4, '0')}${slug ? `_${slug}` : ''}`;
+      .slice(0, maxLength);
   }
 
   /** Caps a value at Excel's cell limit, appending an explicit marker so truncation is never silent. */
@@ -1066,6 +1074,7 @@ export class ReportExportService {
     context: IReportPdfContext,
     splitRequest: boolean,
     contextRules: ILiveDataContextRule[],
+    splitByApi: boolean,
   ): Promise<void> {
     // Same ordering as the other exports: Title (natural), API / id only break ties — Index follows it.
     const rows = [...(await firstValueFrom(this.compareApi.getTestResults(report.compareJobId)))].sort(
@@ -1074,6 +1083,53 @@ export class ReportExportService {
         a.apiName.localeCompare(b.apiName) ||
         a.requestId - b.requestId,
     );
+
+    const name = displayReportId(report.id);
+    const zip = new JSZip();
+    if (!splitByApi) {
+      const { buffer, files } = await this.buildLiveDataWorkbook(rows, report, context, splitRequest, contextRules);
+      zip.file(`${name}.xlsx`, buffer);
+      for (const [path, content] of files) {
+        zip.file(path, content);
+      }
+    } else {
+      // One folder per API: <API>/<report>_<API>.xlsx + its own requests/ · expected_response/ · response/
+      // files, so each workbook's relative links still resolve. Index restarts at 1 in every workbook.
+      const groups = new Map<string, ICompareTestResultRow[]>();
+      for (const row of rows) {
+        groups.set(row.apiName, [...(groups.get(row.apiName) ?? []), row]);
+      }
+      const usedFolders = new Set<string>();
+      for (const apiName of [...groups.keys()].sort((a, b) => a.localeCompare(b))) {
+        let folder = this.fileSlug(apiName, 80) || 'API';
+        for (let n = 2; usedFolders.has(folder.toLowerCase()); n++) {
+          folder = `${this.fileSlug(apiName, 80) || 'API'}_${n}`;
+        }
+        usedFolders.add(folder.toLowerCase());
+        const { buffer, files } = await this.buildLiveDataWorkbook(
+          groups.get(apiName) ?? [], report, context, splitRequest, contextRules,
+        );
+        zip.file(`${folder}/${name}_${folder}.xlsx`, buffer);
+        for (const [path, content] of files) {
+          zip.file(`${folder}/${path}`, content);
+        }
+      }
+    }
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    this.downloadBlob(blob, `${name}.zip`);
+  }
+
+  /**
+   * Builds one Live Data Result workbook for the given (already ordered) rows. Returns the .xlsx buffer
+   * and the linked body files, keyed by their path relative to the workbook.
+   */
+  private async buildLiveDataWorkbook(
+    rows: ICompareTestResultRow[],
+    report: IReportDetail,
+    context: IReportPdfContext,
+    splitRequest: boolean,
+    contextRules: ILiveDataContextRule[],
+  ): Promise<{ buffer: ArrayBuffer; files: Map<string, string> }> {
     const files = new Map<string, string>();
     const datePrefix = this.dateStamp(report.generatedDate);
     // Context-field columns (e.g. DTC) sit right after "Field"; template columns after it shift right.
@@ -1190,15 +1246,8 @@ export class ReportExportService {
     });
     ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: columns } };
 
-    const name = displayReportId(report.id);
-    const buffer = await workbook.xlsx.writeBuffer();
-    const zip = new JSZip();
-    zip.file(`${name}.xlsx`, buffer);
-    for (const [path, content] of files) {
-      zip.file(path, content);
-    }
-    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-    this.downloadBlob(blob, `${name}.zip`);
+    const buffer = (await workbook.xlsx.writeBuffer()) as ArrayBuffer;
+    return { buffer, files };
   }
 
   /**

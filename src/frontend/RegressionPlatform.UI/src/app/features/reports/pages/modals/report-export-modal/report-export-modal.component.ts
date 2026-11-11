@@ -59,6 +59,8 @@ export class ReportExportModalComponent {
   protected readonly testResultsOutput = signal<TestResultsOutput>('excel');
   /** Live Data Result only: also split each request's fields into their own columns. */
   protected readonly liveDataSplitRequest = signal(false);
+  /** Live Data Result only: one Excel file per API instead of one workbook for every API. */
+  protected readonly liveDataSplitByApi = signal(false);
 
   private readonly liveDataContext = inject(LiveDataContextService);
   /** Live Data Result only: context-field rules, loaded from localStorage and saved on Export. */
@@ -131,6 +133,7 @@ export class ReportExportModalComponent {
         testResultsOutput: this.testResultsOutput(),
         liveDataSplitRequest: this.isLiveData() && this.liveDataSplitRequest(),
         liveDataContextRules,
+        liveDataSplitByApi: this.isLiveData() && this.liveDataSplitByApi(),
       },
     });
     this.closed.emit();
