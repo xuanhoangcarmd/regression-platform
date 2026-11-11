@@ -360,27 +360,68 @@ public sealed class RunExecutor(
     }
 
     /// <summary>
-    /// Replaces each <c>{name}</c> in the path with the matching field from <paramref name="query"/>
-    /// (URL-encoded), removing consumed fields. A placeholder with no matching field is left as-is.
+    /// Replaces each <c>{name}</c> in the endpoint with the matching field from <paramref name="query"/>
+    /// (URL-encoded), removing consumed fields. A field that is missing, JSON null or empty has no value:
+    /// <list type="bullet">
+    /// <item>In the endpoint's query part, a <c>key={name}</c> pair without a value is DROPPED, so the API
+    /// binds its default/null (<c>?year={year}</c> → no <c>year</c>; sending <c>year=null</c> fails to bind
+    /// an int with "The value 'null' is not valid").</item>
+    /// <item>In the path, where a segment can't be dropped, it becomes the literal <c>null</c>.</item>
+    /// </list>
     /// </summary>
     private static string SubstitutePathParameters(string path, Dictionary<string, string> query)
     {
-        if (path.IndexOf('{') < 0 || query.Count == 0)
+        if (path.IndexOf('{') < 0)
         {
             return path;
         }
 
-        return PathParameterPattern.Replace(path, match =>
+        var questionMark = path.IndexOf('?');
+        var pathPart = questionMark < 0 ? path : path[..questionMark];
+        var queryPart = questionMark < 0 ? null : path[(questionMark + 1)..];
+
+        pathPart = PathParameterPattern.Replace(pathPart, match =>
+            Uri.EscapeDataString(TakeValue(query, match.Groups[1].Value) ?? MissingPathValue));
+        if (queryPart is null)
         {
-            var name = match.Groups[1].Value.Trim();
-            if (query.TryGetValue(name, out var value))
+            return pathPart;
+        }
+
+        var pairs = new List<string>();
+        foreach (var pair in queryPart.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var equals = pair.IndexOf('=');
+            var rawValue = equals < 0 ? string.Empty : pair[(equals + 1)..];
+            var whole = PathParameterPattern.Match(rawValue);
+            if (whole.Success && whole.Length == rawValue.Length)
             {
-                query.Remove(name);
-                return Uri.EscapeDataString(value);
+                // "key={name}" — keep the pair only when the field has a value.
+                var value = TakeValue(query, whole.Groups[1].Value);
+                if (value is not null)
+                {
+                    pairs.Add($"{pair[..(equals + 1)]}{Uri.EscapeDataString(value)}");
+                }
+                continue;
             }
-            return match.Value; // no matching field — leave the placeholder untouched
-        });
+            // Fixed value or mixed text ("v={major}.{minor}"): substitute, missing parts become empty.
+            pairs.Add(PathParameterPattern.Replace(pair, match =>
+                Uri.EscapeDataString(TakeValue(query, match.Groups[1].Value) ?? string.Empty)));
+        }
+        return pairs.Count == 0 ? pathPart : $"{pathPart}?{string.Join('&', pairs)}";
     }
+
+    /// <summary>Removes and returns a placeholder's field value; null when missing, JSON null or blank.</summary>
+    private static string? TakeValue(Dictionary<string, string> query, string name)
+    {
+        if (!query.Remove(name.Trim(), out var value) || string.IsNullOrWhiteSpace(value) || value == "null")
+        {
+            return null;
+        }
+        return value;
+    }
+
+    /// <summary>Sent in place of a PATH placeholder that has no value (a path segment can't be omitted).</summary>
+    private const string MissingPathValue = "null";
 
     /// <summary>Parses a JSON object of string-ish values into a map; returns empty for null/invalid input.</summary>
     private static Dictionary<string, string> ParseStringMap(string? json)
