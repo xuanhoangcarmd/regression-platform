@@ -33,3 +33,32 @@ coverage/
 Thumbs.db
 .idea/
 *.swp
+
+# ===================== Debug / local artifacts =====================
+# Environment files and certificates
+.env
+.env.*
+*.pfx
+*.pem
+*.key
+
+# Logs and debug dumps
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.dmp
+*.stackdump
+
+# Temp / backup files
+*.tmp
+*.bak
+*.orig
+~$*
+
+# .NET publish output and IDE caches
+publish/
+*.pubxml.user
+_ReSharper*/
+*.DotSettings.user
+.sass-cache/
