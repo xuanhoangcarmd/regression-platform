@@ -65,6 +65,13 @@ public interface IRunRepository
     /// </summary>
     Task<bool> MarkCancelledAsync(long id, DateTime endTime, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Re-run reset, in one transaction: moves a finished run (Completed / Failed / Cancelled) back
+    /// to Queued, clears its timing + counts and deletes its captured responses (expected-response
+    /// overrides are kept). Returns false if the run was not finished (nothing is changed).
+    /// </summary>
+    Task<bool> ResetForRerunAsync(long id, CancellationToken cancellationToken);
+
     /// <summary>True if this run is referenced (as baseline/current) by any compare job or result.</summary>
     Task<bool> HasCompareAsync(long id, CancellationToken cancellationToken);
 

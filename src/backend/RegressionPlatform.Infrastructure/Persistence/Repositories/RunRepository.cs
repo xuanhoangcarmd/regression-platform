@@ -220,6 +220,27 @@ public sealed class RunRepository(IDbConnectionFactory connectionFactory) : IRun
         return true;
     }
 
+    public async Task<bool> ResetForRerunAsync(long id, CancellationToken cancellationToken)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+        var rows = await connection.ExecuteAsync(
+            new CommandDefinition(RunSql.ResetForRerun, new { Id = id }, transaction, cancellationToken: cancellationToken)
+        );
+        if (rows == 0)
+        {
+            transaction.Rollback();
+            return false;
+        }
+
+        await connection.ExecuteAsync(
+            new CommandDefinition(RunSql.DeleteResponses, new { Id = id }, transaction, commandTimeout: 300, cancellationToken: cancellationToken)
+        );
+        transaction.Commit();
+        return true;
+    }
+
     public async Task<bool> HasCompareAsync(long id, CancellationToken cancellationToken)
     {
         using var connection = connectionFactory.CreateConnection();
