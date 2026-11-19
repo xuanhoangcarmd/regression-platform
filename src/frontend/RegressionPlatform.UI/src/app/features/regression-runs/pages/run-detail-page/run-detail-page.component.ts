@@ -3,10 +3,10 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signa
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, debounceTime, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
 
-import { IPagedResult } from '@core/models';
+import { IPagedResult, IProblemDetails } from '@core/models';
 import { AppIconsConstants } from '@core/constants';
 import {
   CellTemplateDirective,
@@ -14,6 +14,7 @@ import {
   IDataTableColumn,
   ISelectOption,
   InputComponent,
+  ModalComponent,
   PaginatorComponent,
   SelectComponent,
   StatusBadgeComponent,
@@ -72,6 +73,7 @@ interface IRunDistribution {
     DataTableComponent,
     CellTemplateDirective,
     PaginatorComponent,
+    ModalComponent,
     RunResultsComponent,
     RouterLink,
   ],
@@ -80,6 +82,7 @@ interface IRunDistribution {
 })
 export class RunDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly api = inject(RunApiService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -149,6 +152,11 @@ export class RunDetailPageComponent {
 
   protected readonly detail = signal<IRunDetail | null>(null);
   protected readonly loading = signal(true);
+
+  /** Re-run all: confirm modal open / request in flight / server error shown in the modal. */
+  protected readonly rerunConfirmOpen = signal(false);
+  protected readonly rerunning = signal(false);
+  protected readonly rerunError = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly activeTab = signal<RunDetailTab>('summary');
 
@@ -347,6 +355,46 @@ export class RunDetailPageComponent {
         error: () => {
           this.errorMessage.set('Failed to load run details.');
           this.loading.set(false);
+        },
+      });
+  }
+
+  /** Only a finished run can be re-run (the backend enforces the same rule). */
+  protected canRerun(status: RunStatus): boolean {
+    return status === 'Completed' || status === 'Failed' || status === 'Cancelled';
+  }
+
+  protected openRerunConfirm(): void {
+    this.rerunError.set(null);
+    this.rerunConfirmOpen.set(true);
+  }
+
+  protected cancelRerun(): void {
+    if (!this.rerunning()) {
+      this.rerunConfirmOpen.set(false);
+    }
+  }
+
+  /** Re-runs every request of this run, then goes to the Runs list, which tracks its progress. */
+  protected confirmRerun(): void {
+    if (this.rerunning()) {
+      return;
+    }
+    this.rerunning.set(true);
+    this.rerunError.set(null);
+    this.api
+      .rerun(this.runId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.rerunning.set(false);
+          this.rerunConfirmOpen.set(false);
+          this.router.navigate(['..'], { relativeTo: this.route });
+        },
+        error: (problem: IProblemDetails) => {
+          // Keep the modal open with the reason (e.g. the run is used in a compare).
+          this.rerunning.set(false);
+          this.rerunError.set(problem?.detail || 'Failed to re-run the run.');
         },
       });
   }

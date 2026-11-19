@@ -112,6 +112,11 @@ export class RunApiService {
     return this.http.post<void>(`${this.baseUrl}/${id}/stop`, null, { params: this.projectParams() });
   }
 
+  /** Re-runs a finished run from scratch (discards its responses and queues it again). */
+  rerun(id: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/rerun`, null, { params: this.projectParams() });
+  }
+
   /** Re-runs a single request inside a run and updates its stored result. */
   rerunRequest(id: number, requestId: number): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/${id}/responses/${requestId}/rerun`, null, { params: this.projectParams() });

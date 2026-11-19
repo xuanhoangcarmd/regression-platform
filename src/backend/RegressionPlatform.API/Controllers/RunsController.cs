@@ -4,6 +4,7 @@ using RegressionPlatform.API.Contracts;
 using RegressionPlatform.Application.Features.Runs.Commands.CreateRun;
 using RegressionPlatform.Application.Features.Runs.Commands.DeleteRun;
 using RegressionPlatform.Application.Features.Runs.Commands.RerunRequest;
+using RegressionPlatform.Application.Features.Runs.Commands.RerunRun;
 using RegressionPlatform.Application.Features.Runs.Commands.StartRun;
 using RegressionPlatform.Application.Features.Runs.Commands.StopRun;
 using RegressionPlatform.Application.Features.Runs.Commands.UpdateRun;
@@ -148,6 +149,20 @@ public sealed class RunsController(ISender sender) : ApiControllerBase
         [FromQuery] string projectId,
         CancellationToken cancellationToken
     ) => HandleResult(await sender.Send(new StartRunCommand(projectId, id), cancellationToken));
+
+    /// <summary>
+    /// Re-run a finished run from scratch: discards its responses and queues it again. Returns 204;
+    /// 409 when the run is not finished or is used in a compare.
+    /// </summary>
+    [HttpPost("{id:long}/rerun")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> RerunRun(
+        long id,
+        [FromQuery] string projectId,
+        CancellationToken cancellationToken
+    ) => HandleResult(await sender.Send(new RerunRunCommand(projectId, id), cancellationToken));
 
     /// <summary>Stop a running run (marks it Cancelled and aborts the background execution). Returns 204.</summary>
     [HttpPost("{id:long}/stop")]

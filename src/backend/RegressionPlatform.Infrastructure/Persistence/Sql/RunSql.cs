@@ -132,6 +132,18 @@ internal static class RunSql
         + "DurationMs = CASE WHEN StartTime IS NOT NULL THEN DATEDIFF(MILLISECOND, StartTime, @EndTime) ELSE DurationMs END "
         + "WHERE Id = @Id AND Status IN ('Queued', 'Running');";
 
+    /// <summary>
+    /// Finished (Completed / Failed / Cancelled) → Queued for a full re-run, clearing timing + counts.
+    /// Affects 0 rows otherwise. TotalRequest is kept (the executor overwrites it on completion).
+    /// </summary>
+    public const string ResetForRerun =
+        "UPDATE Run SET Status = 'Queued', StartTime = NULL, EndTime = NULL, DurationMs = NULL, "
+        + "PassCount = NULL, WarningCount = NULL, FailedCount = NULL "
+        + "WHERE Id = @Id AND Status IN ('Completed', 'Failed', 'Cancelled');";
+
+    /// <summary>Removes a run's captured responses (re-run reset).</summary>
+    public const string DeleteResponses = "DELETE FROM RunResponse WHERE RunId = @Id;";
+
     /// <summary>1 if this run is used (as baseline/current) in any compare job or result; else 0.</summary>
     public const string HasCompare =
         "SELECT CASE WHEN EXISTS (SELECT 1 FROM CompareJob WHERE RunAId = @Id OR RunBId = @Id) "
