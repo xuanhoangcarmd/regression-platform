@@ -9,7 +9,7 @@ using DomainEntities = RegressionPlatform.Domain.Entities;
 namespace RegressionPlatform.Infrastructure.Persistence.Repositories;
 
 /// <summary>Dapper data access for regression runs.</summary>
-public sealed class RunRepository(IDbConnectionFactory connectionFactory) : IRunRepository
+public sealed class RunRepository(IDbConnectionFactory connectionFactory, IRunExecutorIdentity executorIdentity) : IRunRepository
 {
     // Whitelist mapping response-list sort keys -> SQL columns (guards ORDER BY against injection).
     private static readonly IReadOnlyDictionary<string, string> ResponseSortColumns = new Dictionary<string, string>(
@@ -144,7 +144,7 @@ public sealed class RunRepository(IDbConnectionFactory connectionFactory) : IRun
     {
         using var connection = connectionFactory.CreateConnection();
         var rows = await connection.ExecuteAsync(
-            new CommandDefinition(RunSql.MarkQueued, new { Id = id }, cancellationToken: cancellationToken)
+            new CommandDefinition(RunSql.MarkQueued, new { Id = id, Instance = executorIdentity.InstanceId }, cancellationToken: cancellationToken)
         );
         return rows > 0;
     }
@@ -226,7 +226,7 @@ public sealed class RunRepository(IDbConnectionFactory connectionFactory) : IRun
         connection.Open();
         using var transaction = connection.BeginTransaction();
         var rows = await connection.ExecuteAsync(
-            new CommandDefinition(RunSql.ResetForRerun, new { Id = id }, transaction, cancellationToken: cancellationToken)
+            new CommandDefinition(RunSql.ResetForRerun, new { Id = id, Instance = executorIdentity.InstanceId }, transaction, cancellationToken: cancellationToken)
         );
         if (rows == 0)
         {

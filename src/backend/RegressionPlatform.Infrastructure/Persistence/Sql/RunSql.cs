@@ -66,7 +66,7 @@ internal static class RunSql
     /// worker moves Queued → Running when execution actually begins (see RunExecutionSql.MarkRunning).
     /// </summary>
     public const string MarkQueued =
-        "UPDATE Run SET Status = 'Queued' WHERE Id = @Id AND Status = 'Pending';";
+        "UPDATE Run SET Status = 'Queued', ExecutorInstance = @Instance, HeartbeatAt = NULL WHERE Id = @Id AND Status = 'Pending';";
 
     public const string Complete =
         "UPDATE Run SET Status = @Status, EndTime = @EndTime, DurationMs = @DurationMs, TotalRequest = @TotalRequest, "
@@ -138,7 +138,7 @@ internal static class RunSql
     /// </summary>
     public const string ResetForRerun =
         "UPDATE Run SET Status = 'Queued', StartTime = NULL, EndTime = NULL, DurationMs = NULL, "
-        + "PassCount = NULL, WarningCount = NULL, FailedCount = NULL "
+        + "PassCount = NULL, WarningCount = NULL, FailedCount = NULL, ExecutorInstance = @Instance, HeartbeatAt = NULL "
         + "WHERE Id = @Id AND Status IN ('Completed', 'Failed', 'Cancelled');";
 
     /// <summary>Removes a run's captured responses (re-run reset).</summary>

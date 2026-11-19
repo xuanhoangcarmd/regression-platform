@@ -25,8 +25,17 @@ public interface IRunExecutionRepository
     /// <summary>Enabled ignore rules for the project (with the APIs each applies to).</summary>
     Task<IReadOnlyList<IgnoreRulePath>> GetIgnorePathsAsync(int projectId, CancellationToken cancellationToken);
 
-    /// <summary>Persists one captured response.</summary>
-    Task InsertResponseAsync(DomainEntities.RunResponse response, CancellationToken cancellationToken);
+    /// <summary>
+    /// Persists one captured response — only while this instance still owns the Running run, and never
+    /// twice for the same request (see <see cref="ResponseInsertResult"/>).
+    /// </summary>
+    Task<ResponseInsertResult> InsertResponseAsync(DomainEntities.RunResponse response, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Owner heartbeat for a Running run. False = this instance no longer owns it (stopped from any
+    /// instance, re-run, or failed by recovery) and the executor must stop.
+    /// </summary>
+    Task<bool> HeartbeatAsync(long runId, CancellationToken cancellationToken);
 
     /// <summary>One request's definition (method/endpoint/headers/query/body) by id, or null if gone.</summary>
     Task<RunnableRequest?> GetRunnableRequestAsync(long requestId, CancellationToken cancellationToken);
@@ -41,21 +50,29 @@ public interface IRunExecutionRepository
     Task RecalculateRunCountsAsync(long runId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Atomically moves a Queued run to Running (sets StartTime) right before execution. Returns
-    /// false if the run is no longer Queued (e.g. cancelled while waiting) — the caller must skip it.
+    /// Atomically moves a Queued run to Running (sets StartTime) right before execution and claims it
+    /// for this instance. Returns false if the run is no longer Queued (e.g. cancelled while waiting,
+    /// or claimed by another instance) — the caller must skip it.
     /// </summary>
     Task<bool> TryMarkRunningAsync(long runId, DateTime startTime, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Startup recovery: finalizes every run still marked Running as Failed (they were interrupted
-    /// by an app restart — the in-memory queue does not survive one). Returns the number recovered.
+    /// Recovery: finalizes as Failed every Running run whose owner has not sent a heartbeat for
+    /// <paramref name="staleAfter"/> (process killed / restarted). Runs a live instance — here or on
+    /// another machine sharing the DB — is executing are left alone. Returns the number recovered.
     /// </summary>
-    Task<int> FailInterruptedRunsAsync(DateTime endTime, CancellationToken cancellationToken);
+    Task<int> FailStaleRunsAsync(DateTime endTime, TimeSpan staleAfter, CancellationToken cancellationToken);
 
-    /// <summary>Startup recovery: ids of Queued runs (never started — safe to re-enqueue), oldest first.</summary>
+    /// <summary>
+    /// Startup recovery: ids of Queued runs queued from this node (never started — safe to re-enqueue),
+    /// oldest first. Runs queued by another instance sharing the DB are left to that instance.
+    /// </summary>
     Task<IReadOnlyList<long>> GetQueuedRunIdsAsync(CancellationToken cancellationToken);
 
-    /// <summary>Finalizes a run (Completed/Failed) with timing, totals, and execution-health counts.</summary>
+    /// <summary>
+    /// Finalizes a run (Completed/Failed) with timing, totals, and execution-health counts — only if it
+    /// is still Running under this instance (a lost run is never overwritten).
+    /// </summary>
     Task CompleteRunAsync(
         long runId,
         string status,

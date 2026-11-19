@@ -32,13 +32,35 @@ public sealed class RunExecutor(
     /// <summary>A successful response slower than this (ms) counts as a Warning.</summary>
     private const int WarningThresholdMs = 2000;
 
+    /// <summary>
+    /// How often the owning executor refreshes Run.HeartbeatAt. Must stay well below
+    /// <see cref="StaleAfter"/> so a live run is never mistaken for an orphan.
+    /// </summary>
+    public static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(20);
+
+    /// <summary>A Running run without a heartbeat for this long is treated as orphaned by recovery.</summary>
+    public static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(2);
+
     private static readonly HashSet<string> BodylessMethods = new(StringComparer.OrdinalIgnoreCase) { "GET", "HEAD" };
 
     public async Task ExecuteAsync(long runId, CancellationToken stoppingToken)
     {
         var stopwatch = Stopwatch.StartNew();
         // Per-run cancellation token: trips on app shutdown (stoppingToken) OR a user Stop request.
-        var cancellationToken = cancellationRegistry.Register(runId, stoppingToken);
+        var registeredToken = cancellationRegistry.Register(runId, stoppingToken);
+        // Also trips when this instance loses the run (heartbeat / insert sees another owner or status).
+        using var ownershipCts = CancellationTokenSource.CreateLinkedTokenSource(registeredToken);
+        var cancellationToken = ownershipCts.Token;
+        var ownershipLost = false;
+        using var heartbeatCts = new CancellationTokenSource();
+        Task heartbeat = Task.CompletedTask;
+
+        void LoseOwnership()
+        {
+            ownershipLost = true;
+            ownershipCts.Cancel();
+        }
+
         try
         {
             var run = await executionRepository.GetExecutionInfoAsync(runId, cancellationToken);
@@ -55,6 +77,10 @@ public sealed class RunExecutor(
                 logger.LogInformation("Run {RunId} is no longer Queued (cancelled while waiting); skipping.", runId);
                 return;
             }
+
+            // Heartbeat while we own the run, so recovery on any instance sharing the DB leaves it
+            // alone; a failed beat (stopped / re-run / recovered elsewhere) stops this executor.
+            heartbeat = RunHeartbeatAsync(runId, LoseOwnership, heartbeatCts.Token);
 
             // Resolve the environment configuration (Base URL + headers, secrets decrypted).
             var configurations = await configurationRepository.GetConfigurationsAsync(run.ProjectId, cancellationToken);
@@ -99,8 +125,18 @@ public sealed class RunExecutor(
             async Task ProcessAsync(RunnableRequest request)
             {
                 var response = await ExecuteRequestAsync(client, runId, baseUrl, environmentHeaders, request, cancellationToken);
-                await executionRepository.InsertResponseAsync(response, cancellationToken);
+                var stored = await executionRepository.InsertResponseAsync(response, cancellationToken);
+                if (stored == ResponseInsertResult.NotOwner)
+                {
+                    LoseOwnership();
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
                 progressTracker.Increment(runId);
+                if (stored == ResponseInsertResult.Duplicate)
+                {
+                    logger.LogWarning("Run {RunId}: request {RequestId} already has a response; skipped.", runId, request.RequestId);
+                    return;
+                }
 
                 // Classify for execution-health metrics: failed → warning (slow) → pass.
                 if (IsFailed(response))
@@ -157,6 +193,12 @@ public sealed class RunExecutor(
         {
             throw; // app shutdown — leave the run as Running; do not mark Failed/Cancelled.
         }
+        catch (OperationCanceledException) when (ownershipLost)
+        {
+            // Stopped / re-run / recovered from another instance: the run's state belongs to whoever
+            // changed it — stop without writing anything.
+            logger.LogWarning("Run {RunId} is no longer owned by this instance; execution stopped.", runId);
+        }
         catch (OperationCanceledException)
         {
             // User Stop — the stop request already set the run to 'Cancelled'; just stop quietly.
@@ -170,9 +212,43 @@ public sealed class RunExecutor(
         }
         finally
         {
+            heartbeatCts.Cancel();
+            await heartbeat;
             // Always free the per-run cancellation source + in-memory progress (completed/failed/cancelled).
             cancellationRegistry.Remove(runId);
             progressTracker.Remove(runId);
+        }
+    }
+
+    /// <summary>
+    /// Refreshes the run's heartbeat every <see cref="HeartbeatInterval"/> until cancelled. When a beat
+    /// finds the run no longer Running under this instance, calls <paramref name="onLost"/> and ends.
+    /// A transient DB error only skips that beat (the next one retries).
+    /// </summary>
+    private async Task RunHeartbeatAsync(long runId, Action onLost, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(HeartbeatInterval);
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                try
+                {
+                    if (!await executionRepository.HeartbeatAsync(runId, cancellationToken))
+                    {
+                        onLost();
+                        return;
+                    }
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(ex, "Run {RunId}: heartbeat failed; retrying on the next tick.", runId);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Execution finished — stop beating.
         }
     }
 

@@ -80,6 +80,8 @@ A regression run (execution).
 | `DurationMs` | `bigint` | NULL |
 | `TotalRequest` | `int` | NULL |
 | `CreatedDate` | `datetime2` | DEFAULT `getutcdate()` |
+| `ExecutorInstance` | `nvarchar(200)` | NULL; API process that owns the run (`<node>\|<pid>\|<id>`), set on Start / Re-run and when an executor claims it (`20261119_AddRunExecutorOwnership.sql`) |
+| `HeartbeatAt` | `datetime2(3)` | NULL; refreshed by the owning executor every ~20 s while Running. Recovery fails a Running run only when this is older than 2 min, so instances sharing the DB don't fail each other's runs |
 
 ---
 

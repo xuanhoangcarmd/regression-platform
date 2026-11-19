@@ -52,25 +52,63 @@ internal static class RunExecutionSql
         + "FailedCount = (SELECT COUNT(1) FROM RunResponse WHERE RunId = @Id AND (ErrorMessage IS NOT NULL OR StatusCode IS NULL OR StatusCode >= 400)) "
         + "WHERE Id = @Id;";
 
+    /// <summary>
+    /// Finalizes a run — only while it is still Running AND owned by this instance, so an executor
+    /// that lost the run (stopped, re-run, or failed by recovery) never overwrites its new state.
+    /// </summary>
     public const string Complete =
         "UPDATE Run SET Status = @Status, EndTime = @EndTime, DurationMs = @DurationMs, TotalRequest = @TotalRequest, "
-        + "PassCount = @PassCount, WarningCount = @WarningCount, FailedCount = @FailedCount WHERE Id = @Id;";
+        + "PassCount = @PassCount, WarningCount = @WarningCount, FailedCount = @FailedCount "
+        + "WHERE Id = @Id AND Status = 'Running' AND ExecutorInstance = @Instance;";
 
     /// <summary>
-    /// Queued → Running only (sets StartTime), right before execution begins. Affects 0 rows if the
-    /// run was cancelled (or otherwise finalized) while waiting in the queue — the worker then skips it.
+    /// Queued → Running only (sets StartTime), right before execution begins, and claims the run for
+    /// this instance (owner + first heartbeat). Affects 0 rows if the run was cancelled (or otherwise
+    /// finalized / claimed) while waiting in the queue — the worker then skips it.
     /// </summary>
     public const string MarkRunning =
-        "UPDATE Run SET Status = 'Running', StartTime = @StartTime WHERE Id = @Id AND Status = 'Queued';";
+        "UPDATE Run SET Status = 'Running', StartTime = @StartTime, ExecutorInstance = @Instance, HeartbeatAt = SYSUTCDATETIME() "
+        + "WHERE Id = @Id AND Status = 'Queued';";
 
     /// <summary>
-    /// Startup recovery: any run still 'Running' was interrupted by an app restart (the in-memory
-    /// queue/executor did not survive) — finalize it as Failed. DurationMs is left as-is: the run
-    /// never finished, so a computed duration would be meaningless.
+    /// Owner heartbeat while executing. 0 rows = the run is no longer Running under this instance
+    /// (stopped from any instance, re-run, or failed by recovery) — the executor must stop.
     /// </summary>
-    public const string FailInterrupted =
-        "UPDATE Run SET Status = 'Failed', EndTime = @EndTime WHERE Status = 'Running';";
+    public const string Heartbeat =
+        "UPDATE Run SET HeartbeatAt = SYSUTCDATETIME() WHERE Id = @Id AND Status = 'Running' AND ExecutorInstance = @Instance;";
 
-    /// <summary>Startup recovery: Queued runs never started, so they are safe to re-enqueue.</summary>
-    public const string GetQueuedRunIds = "SELECT Id FROM Run WHERE Status = 'Queued' ORDER BY Id;";
+    /// <summary>
+    /// Inserts a response only while this instance still owns the Running run, and never twice for
+    /// the same request. Returns -1 = not the owner any more, 0 = already stored (skipped), 1 = inserted.
+    /// </summary>
+    public const string InsertOwnedResponse =
+        "IF NOT EXISTS (SELECT 1 FROM Run WHERE Id = @RunId AND Status = 'Running' AND ExecutorInstance = @Instance) "
+        + "    SELECT -1; "
+        + "ELSE "
+        + "BEGIN "
+        + "    INSERT INTO RunResponse (RunId, RequestId, StatusCode, DurationMs, ResponseHash, ResponseOrderedHash, ResponseJson, ResponseHeaders, ResponseSize, ErrorMessage, CreatedDate) "
+        + "    SELECT @RunId, @RequestId, @StatusCode, @DurationMs, @ResponseHash, @ResponseOrderedHash, @ResponseJson, @ResponseHeaders, @ResponseSize, @ErrorMessage, SYSUTCDATETIME() "
+        + "    WHERE NOT EXISTS (SELECT 1 FROM RunResponse WITH (UPDLOCK, HOLDLOCK) WHERE RunId = @RunId AND RequestId = @RequestId); "
+        + "    SELECT @@ROWCOUNT; "
+        + "END";
+
+    /// <summary>
+    /// Recovery: a Running run whose owner stopped heart-beating (process killed / restarted / stuck)
+    /// is finalized as Failed. Runs owned by a live instance — on this or another machine sharing the
+    /// DB — keep beating and are left alone. Legacy rows (no owner, from before ownership existed) are
+    /// never auto-failed; stop them manually. DurationMs is left as-is (the run never finished).
+    /// </summary>
+    public const string FailStale =
+        "UPDATE Run SET Status = 'Failed', EndTime = @EndTime "
+        + "WHERE Status = 'Running' AND ExecutorInstance IS NOT NULL "
+        + "  AND (HeartbeatAt IS NULL OR HeartbeatAt < DATEADD(SECOND, -@StaleSeconds, SYSUTCDATETIME()));";
+
+    /// <summary>
+    /// Startup recovery: Queued runs never started, so they are safe to re-enqueue — but only the ones
+    /// queued from this node (or legacy rows with no owner), so a restart of one machine doesn't pull
+    /// runs that another instance sharing the DB queued.
+    /// </summary>
+    public const string GetQueuedRunIds =
+        "SELECT Id FROM Run WHERE Status = 'Queued' "
+        + "AND (ExecutorInstance IS NULL OR LEFT(ExecutorInstance, LEN(@NodePrefix)) = @NodePrefix) ORDER BY Id;";
 }

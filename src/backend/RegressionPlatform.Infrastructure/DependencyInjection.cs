@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddSingleton<IRunExecutionQueue>(sp => sp.GetRequiredService<RunExecutionQueue>());
         services.AddSingleton<IRunProgressTracker, InMemoryRunProgressTracker>();
         services.AddSingleton<IRunCancellationRegistry, RunCancellationRegistry>();
+        services.AddSingleton<IRunExecutorIdentity, RunExecutorIdentity>();
         services.AddHttpClient(RunExecutor.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(30));
         services.AddScoped<RunExecutor>();
         services.AddScoped<IRunRequestExecutor>(sp => sp.GetRequiredService<RunExecutor>());

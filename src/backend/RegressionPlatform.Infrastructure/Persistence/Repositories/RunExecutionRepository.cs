@@ -8,7 +8,8 @@ using DomainEntities = RegressionPlatform.Domain.Entities;
 namespace RegressionPlatform.Infrastructure.Persistence.Repositories;
 
 /// <summary>Dapper data access for the run executor.</summary>
-public sealed class RunExecutionRepository(IDbConnectionFactory connectionFactory) : IRunExecutionRepository
+public sealed class RunExecutionRepository(IDbConnectionFactory connectionFactory, IRunExecutorIdentity executorIdentity)
+    : IRunExecutionRepository
 {
     private sealed record IgnoreRow(int RuleId, string JsonPath, int? ApiId);
 
@@ -63,12 +64,48 @@ public sealed class RunExecutionRepository(IDbConnectionFactory connectionFactor
             .ToList();
     }
 
-    public async Task InsertResponseAsync(DomainEntities.RunResponse response, CancellationToken cancellationToken)
+    public async Task<ResponseInsertResult> InsertResponseAsync(DomainEntities.RunResponse response, CancellationToken cancellationToken)
     {
         using var connection = connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(
-            new CommandDefinition(RunExecutionSql.InsertResponse, ResponseParams(response), cancellationToken: cancellationToken)
+        var outcome = await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(
+                RunExecutionSql.InsertOwnedResponse,
+                new
+                {
+                    response.RunId,
+                    response.RequestId,
+                    response.StatusCode,
+                    response.DurationMs,
+                    response.ResponseHash,
+                    response.ResponseOrderedHash,
+                    response.ResponseJson,
+                    response.ResponseHeaders,
+                    response.ResponseSize,
+                    response.ErrorMessage,
+                    Instance = executorIdentity.InstanceId,
+                },
+                cancellationToken: cancellationToken
+            )
         );
+        return outcome switch
+        {
+            < 0 => ResponseInsertResult.NotOwner,
+            0 => ResponseInsertResult.Duplicate,
+            _ => ResponseInsertResult.Inserted,
+        };
+    }
+
+    public async Task<bool> HeartbeatAsync(long runId, CancellationToken cancellationToken)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        var rows = await connection.ExecuteAsync(
+            new CommandDefinition(
+                RunExecutionSql.Heartbeat,
+                new { Id = runId, Instance = executorIdentity.InstanceId },
+                cancellationToken: cancellationToken
+            )
+        );
+        return rows > 0;
     }
 
     public async Task<RunnableRequest?> GetRunnableRequestAsync(long requestId, CancellationToken cancellationToken)
@@ -127,18 +164,22 @@ public sealed class RunExecutionRepository(IDbConnectionFactory connectionFactor
         var rows = await connection.ExecuteAsync(
             new CommandDefinition(
                 RunExecutionSql.MarkRunning,
-                new { Id = runId, StartTime = startTime },
+                new { Id = runId, StartTime = startTime, Instance = executorIdentity.InstanceId },
                 cancellationToken: cancellationToken
             )
         );
         return rows > 0;
     }
 
-    public async Task<int> FailInterruptedRunsAsync(DateTime endTime, CancellationToken cancellationToken)
+    public async Task<int> FailStaleRunsAsync(DateTime endTime, TimeSpan staleAfter, CancellationToken cancellationToken)
     {
         using var connection = connectionFactory.CreateConnection();
         return await connection.ExecuteAsync(
-            new CommandDefinition(RunExecutionSql.FailInterrupted, new { EndTime = endTime }, cancellationToken: cancellationToken)
+            new CommandDefinition(
+                RunExecutionSql.FailStale,
+                new { EndTime = endTime, StaleSeconds = (int)staleAfter.TotalSeconds },
+                cancellationToken: cancellationToken
+            )
         );
     }
 
@@ -146,7 +187,11 @@ public sealed class RunExecutionRepository(IDbConnectionFactory connectionFactor
     {
         using var connection = connectionFactory.CreateConnection();
         var ids = await connection.QueryAsync<long>(
-            new CommandDefinition(RunExecutionSql.GetQueuedRunIds, cancellationToken: cancellationToken)
+            new CommandDefinition(
+                RunExecutionSql.GetQueuedRunIds,
+                new { NodePrefix = executorIdentity.NodeName + "|" },
+                cancellationToken: cancellationToken
+            )
         );
         return ids.ToList();
     }
@@ -177,6 +222,7 @@ public sealed class RunExecutionRepository(IDbConnectionFactory connectionFactor
                     PassCount = passCount,
                     WarningCount = warningCount,
                     FailedCount = failedCount,
+                    Instance = executorIdentity.InstanceId,
                 },
                 cancellationToken: cancellationToken
             )
