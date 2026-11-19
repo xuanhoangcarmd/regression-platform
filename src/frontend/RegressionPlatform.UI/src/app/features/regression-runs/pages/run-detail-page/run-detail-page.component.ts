@@ -27,10 +27,18 @@ import { RunResultsComponent } from '../../components/run-results/run-results.co
 
 type RunDetailTab = 'summary' | 'apis' | 'requests' | 'results' | 'logs';
 
-/** Per-API health for the APIs tab (worst outcome wins). */
+/** Per-request outcome (Requests tab filter / badge tone). */
 type ApiHealth = 'Passed' | 'Warning' | 'Failed';
 
 type ApiHealthFilter = 'all' | ApiHealth;
+
+/**
+ * Per-API execution status for the APIs tab: Completed when the API's requests ran (even if some
+ * returned errors — those show in the Failed count); Failed only when every request failed.
+ */
+type ApiRunStatus = 'Completed' | 'Failed';
+
+type ApiRunStatusFilter = 'all' | ApiRunStatus;
 
 interface IRunTab {
   key: RunDetailTab;
@@ -91,17 +99,16 @@ export class RunDetailPageComponent {
 
   // APIs-tab filters.
   protected readonly apiSearchControl = new FormControl<string>('', { nonNullable: true });
-  protected readonly apiStatusControl = new FormControl<ApiHealthFilter>('all', { nonNullable: true });
+  protected readonly apiStatusControl = new FormControl<ApiRunStatusFilter>('all', { nonNullable: true });
   private readonly apiSearch = signal('');
-  private readonly apiStatusFilter = signal<ApiHealthFilter>('all');
+  private readonly apiStatusFilter = signal<ApiRunStatusFilter>('all');
   // APIs-tab sort (client-side, over the fully-loaded statistics).
   protected readonly apiSort = signal<string | null>(null);
   protected readonly apiSortDir = signal<'asc' | 'desc'>('asc');
 
   protected readonly apiStatusOptions: ISelectOption[] = [
     { value: 'all', label: 'All' },
-    { value: 'Passed', label: 'Success' },
-    { value: 'Warning', label: 'Warning' },
+    { value: 'Completed', label: 'Completed' },
     { value: 'Failed', label: 'Failed' },
   ];
 
@@ -218,7 +225,7 @@ export class RunDetailPageComponent {
     const filtered = run.apiStatistics.filter((stat) => {
       const matchesTerm =
         !term || stat.apiName.toLowerCase().includes(term) || stat.endpoint.toLowerCase().includes(term);
-      const matchesStatus = status === 'all' || this.apiHealth(stat) === status;
+      const matchesStatus = status === 'all' || this.apiStatus(stat) === status;
       return matchesTerm && matchesStatus;
     });
 
@@ -369,8 +376,11 @@ export class RunDetailPageComponent {
       case 'avgResponseTimeMs':
         return stat.avgResponseTimeMs ?? -1;
       case 'apiStatus': {
-        const health = this.apiHealth(stat);
-        return health === 'Failed' ? 2 : health === 'Warning' ? 1 : 0;
+        // Failed first (desc), then Completed with errors / slow requests, then clean Completed.
+        if (this.apiStatus(stat) === 'Failed') {
+          return 2;
+        }
+        return stat.failedCount > 0 || stat.warningCount > 0 ? 1 : 0;
       }
       default:
         return 0;
@@ -398,16 +408,21 @@ export class RunDetailPageComponent {
     this.requestPage.set(1);
   }
 
-  /** Worst-outcome status for an API: any failed → Failed; else any warning → Warning; else Passed. */
-  protected apiHealth(stat: IApiRunStatistic): ApiHealth {
-    if (stat.failedCount > 0) {
-      return 'Failed';
-    }
-    return stat.warningCount > 0 ? 'Warning' : 'Passed';
+  /**
+   * Execution status for an API: Failed only when every request failed (e.g. the API is down / the
+   * base URL is wrong); otherwise Completed — a few error responses don't fail the API, they're in
+   * the Failed count.
+   */
+  protected apiStatus(stat: IApiRunStatistic): ApiRunStatus {
+    return stat.requestCount > 0 && stat.failedCount >= stat.requestCount ? 'Failed' : 'Completed';
   }
 
-  protected apiHealthTone(stat: IApiRunStatistic): StatusTone {
-    return RunDetailPageComponent.apiHealthTones[this.apiHealth(stat)];
+  /** Completed is green when clean, amber when some requests failed or were slow; Failed is red. */
+  protected apiStatusTone(stat: IApiRunStatistic): StatusTone {
+    if (this.apiStatus(stat) === 'Failed') {
+      return 'error';
+    }
+    return stat.failedCount > 0 || stat.warningCount > 0 ? 'warning' : 'success';
   }
 
   protected asResponse(row: unknown): IRunResponseItem {

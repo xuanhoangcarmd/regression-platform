@@ -328,7 +328,7 @@
         </ng-template>
         <ng-template appCell="apiStatus" let-row>
           <div class="flex justify-center">
-            <app-status-badge [label]="resultStatusLabel(apiHealth(asStatistic(row)))" [tone]="apiHealthTone(asStatistic(row))" />
+            <app-status-badge [label]="apiStatus(asStatistic(row))" [tone]="apiStatusTone(asStatistic(row))" />
           </div>
         </ng-template>
       </app-data-table>
